@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6c63ff">
+<title>Lernhelden</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lernhelden">
+<meta name="mobile-web-app-capable" content="yes">
+
+<style>
+:root{--p:#6c63ff;--p2:#948eff;--bg:#f7f8fc;--card:#fff;--txt:#25273d;--muted:#777b90;--line:#e6e7ef;--ok:#31a874;--bad:#e65a5a}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(#eceeff,#f8f9fc 300px);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--txt)}
+.app{max-width:620px;margin:auto;padding:16px 14px 96px}.top{display:flex;justify-content:space-between;align-items:center;margin:6px 2px 18px}.logo{font-size:25px;font-weight:900}.logo i{font-style:normal;color:var(--p)}
+.hero{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;padding:22px;border-radius:26px;box-shadow:0 14px 35px #6c63ff24}.hero h1{font-size:28px;margin:0 0 7px}.hero p{margin:0;line-height:1.45}
+.card{background:#fff;padding:18px;border-radius:22px;margin:13px 0;box-shadow:0 10px 30px #282b4d12}.title{font-weight:900;font-size:18px;margin:20px 3px 10px}
+.kids{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kid{border:2px solid transparent;background:#fff;border-radius:20px;padding:14px;text-align:left;box-shadow:0 8px 22px #282b4d10}.kid.active{border-color:var(--p)}.avatar{font-size:34px}.name{font-size:17px;font-weight:900}.muted{color:var(--muted);font-size:13px}
+.btn{width:100%;border:0;border-radius:15px;padding:13px 15px;background:var(--p);color:#fff;font-weight:850;font-size:15px;margin-top:10px}.btn.alt{background:#f0efff;color:var(--p)}.btn.ghost{background:#f6f6fa;color:var(--txt)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{text-align:center;background:#f7f7fb;padding:13px;border-radius:16px}.stat b{font-size:22px;display:block}
+.ops{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.op,.range,.mode,.tablebtn{border:2px solid transparent;background:#f7f7fb;border-radius:15px;padding:12px 6px;font-weight:850}.op{font-size:24px}.selected{border-color:var(--p)!important;background:#f0efff!important;color:var(--p)}
+.tables{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.tablebtn{padding:11px 4px}.ranges,.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.q{font-size:38px;font-weight:950;text-align:center;margin:28px 0 18px}.q.textq{font-size:22px;line-height:1.5;text-align:left}.answerInput{width:100%;border:2px solid var(--line);border-radius:17px;padding:16px;text-align:center;font-size:28px;font-weight:850;outline:none}.answerInput:focus{border-color:var(--p)}
+.feedback{padding:13px;border-radius:14px;background:#f7f7fb;margin-top:12px;text-align:center;font-weight:750;min-height:48px}.ok{background:#effaf5;color:#217a57}.bad{background:#fff0f0;color:#a93f3f}
+.bar{height:9px;background:#ececf3;border-radius:999px;overflow:hidden}.bar div{height:100%;background:var(--p)}.pill{display:inline-block;background:#f0efff;color:var(--p);padding:7px 10px;border-radius:999px;font-size:12px;font-weight:850}
+.bottom{position:fixed;left:50%;bottom:9px;transform:translateX(-50%);width:min(590px,calc(100% - 20px));display:grid;grid-template-columns:repeat(4,1fr);background:#ffffffee;backdrop-filter:blur(14px);padding:7px;border-radius:21px;box-shadow:0 12px 35px #20233a24}.nav{border:0;background:none;color:#898c9e;padding:7px 2px;font-size:11px}.nav span{display:block;font-size:21px}.nav.active{color:var(--p);font-weight:850}.screen{display:none}.screen.active{display:block}
+.mastery{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.master{padding:9px 4px;border-radius:12px;background:#f7f7fb;text-align:center;font-size:12px}.master b{display:block;font-size:16px}
+@media(max-width:400px){.grid3{grid-template-columns:1fr}.ranges,.modes{grid-template-columns:1fr}.tables,.mastery{grid-template-columns:repeat(5,1fr)}}
+.answer{width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:15px;padding:13px;margin:6px 0;font-weight:800}.answer.correct{border-color:var(--ok);background:#effaf5}.answer.wrong{border-color:var(--bad);background:#fff0f0}</style></head>
+<body>
+<div class="app">
+<div class="top"><div class="logo">Lern<i>helden</i> <span>✨</span></div><button class="pill" style="border:0" onclick="show('parent')">👨‍👩‍👧 Eltern</button></div>
+
+<section id="home" class="screen active">
+ <div class="hero"><h1 id="hello">Hallo 👋</h1><p>Kurze Übungen, klare Erfolge. Dein Lernstand bleibt nur auf diesem Gerät gespeichert.</p></div>
+ <div class="title">Wer lernt?</div><div class="kids" id="kids"></div>
+ <div class="title">Dein Fortschritt</div>
+ <div class="card"><div class="grid3">
+  <div class="stat"><b id="stars">0 ⭐</b><span class="muted">Sterne</span></div>
+  <div class="stat"><b id="total">0</b><span class="muted">Aufgaben</span></div>
+  <div class="stat"><b id="rate">0%</b><span class="muted">richtig</span></div>
+ </div><button class="btn" onclick="show('math')">🏆 Mathe Arena</button>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+<button class="btn alt" onclick="openLang('de')">🇩🇪 Deutsch</button>
+<button class="btn alt" onclick="openLang('en')">🇬🇧 Englisch</button>
+</div></div>
+</section>
+
+<section id="math" class="screen">
+ <div class="hero"><h1>Mathe Arena 🏆</h1><p>Wähle genau das aus, was du heute üben möchtest.</p></div>
+ <div class="card">
+   <div class="title" style="margin-top:0">Rechenart</div>
+   <div class="ops">
+    <button class="op selected" data-op="*" onclick="pickOp(this)">×</button>
+    <button class="op" data-op="/" onclick="pickOp(this)">÷</button>
+    <button class="op" data-op="+" onclick="pickOp(this)">+</button>
+    <button class="op" data-op="-" onclick="pickOp(this)">−</button>
+    <button class="op" data-op="text" onclick="pickOp(this)">📝</button>
+   </div>
+   <div id="tableArea">
+    <div class="title">Welche Reihe?</div>
+    <div class="tables" id="tables"></div>
+    <button class="btn alt" id="allTables" onclick="toggleAll()">Alle Reihen</button>
+   </div>
+   <div id="rangeArea" style="display:none">
+    <div class="title">Zahlenraum</div>
+    <div class="ranges">
+      <button class="range selected" data-r="20" onclick="pickRange(this)">bis 20</button>
+      <button class="range" data-r="100" onclick="pickRange(this)">bis 100</button>
+      <button class="range" data-r="1000" onclick="pickRange(this)">bis 1.000</button>
+    </div>
+   </div>
+   <div id="textArea" style="display:none">
+    <div class="title">Textaufgaben</div>
+    <div class="ranges">
+      <button class="range textdiff selected" data-d="easy" onclick="pickDiff(this)">⭐ Leicht</button>
+      <button class="range textdiff" data-d="medium" onclick="pickDiff(this)">⭐⭐ Mittel</button>
+      <button class="range textdiff" data-d="hard" onclick="pickDiff(this)">⭐⭐⭐ Knifflig</button>
+    </div>
+    <p class="muted">Leicht: eine klare Rechnung · Mittel: Rechenart selbst erkennen · Knifflig: zwei Rechenschritte</p>
+   </div>
+   <div class="title">Trainingsmodus</div>
+   <div class="modes">
+    <button class="mode selected" data-mode="practice" onclick="pickMode(this)">🧠 Üben</button>
+    <button class="mode" data-mode="ten" onclick="pickMode(this)">🎯 10 Aufgaben</button>
+    <button class="mode" data-mode="minute" onclick="pickMode(this)">⏱️ 1 Minute</button>
+   </div>
+   <button class="btn" onclick="startGame()">Los geht's 🚀</button>
+ </div>
+</section>
+
+<section id="game" class="screen">
+ <div class="card">
+   <div style="display:flex;justify-content:space-between;align-items:center"><span class="pill" id="gameMode">Üben</span><b id="gameInfo"></b></div>
+   <div class="bar" style="margin:14px 0"><div id="gameBar" style="width:0"></div></div>
+   <div class="q" id="question">7 × 8 = ?</div>
+   <input id="answer" class="answerInput" inputmode="numeric" pattern="[0-9]*" placeholder="?" onkeydown="if(event.key==='Enter')checkAnswer()">
+   <button class="btn" id="checkBtn" onclick="checkAnswer()">Prüfen</button>
+   <button class="btn alt" id="nextBtn" style="display:none" onclick="nextTask()">Nächste Aufgabe →</button>
+   <div id="feedback" class="feedback">Du schaffst das 💪</div>
+ </div>
+</section>
+
+
+<section id="language" class="screen">
+ <div class="hero"><h1 id="langTitle">🇩🇪 Deutsch</h1><p id="langIntro">Wortarten spielerisch erkennen und sicher anwenden.</p></div>
+ <div class="card">
+  <div class="title" style="margin-top:0">Was möchtest du üben?</div>
+  <div class="modes" id="langTopics"></div>
+  <div class="title">Trainingsmodus</div>
+  <div class="modes">
+   <button class="mode langmode selected" data-lmode="practice" onclick="pickLangMode(this)">🧠 Üben</button>
+   <button class="mode langmode" data-lmode="ten" onclick="pickLangMode(this)">🎯 10 Aufgaben</button>
+   <button class="mode langmode" data-lmode="minute" onclick="pickLangMode(this)">⏱️ 1 Minute</button>
+  </div>
+  <button class="btn" onclick="startLangGame()">Los geht's 🚀</button>
+ </div>
+</section>
+
+<section id="langGame" class="screen">
+ <div class="card">
+  <div style="display:flex;justify-content:space-between"><span class="pill" id="lgPill">Deutsch</span><b id="lgInfo"></b></div>
+  <div class="bar" style="margin:14px 0"><div id="lgBar" style="width:0"></div></div>
+  <div class="q textq" id="lgQuestion"></div>
+  <div id="lgAnswers"></div>
+  <div id="lgFeedback" class="feedback">Wähle die richtige Antwort ✨</div>
+  <button id="lgNext" class="btn alt" style="display:none" onclick="nextLangTask()">Nächste Aufgabe →</button>
+ </div>
+</section>
+
+<section id="progressScreen" class="screen">
+ <div class="hero"><h1>Meine Erfolge ⭐</h1><p>Die App merkt sich, welche Reihen schon gut sitzen und welche noch etwas Übung brauchen.</p></div>
+ <div class="card"><div class="grid3">
+  <div class="stat"><b id="pstars">0 ⭐</b><span class="muted">Sterne</span></div>
+  <div class="stat"><b id="ptotal">0</b><span class="muted">Aufgaben</span></div>
+  <div class="stat"><b id="prate">0%</b><span class="muted">richtig</span></div>
+ </div></div>
+ <div class="title">Einmaleins</div><div class="card"><div class="mastery" id="mastery"></div><p class="muted">⭐ = sitzt gut · 🟡 = weiter üben · ⚪ = noch kaum geübt</p></div>
+</section>
+
+<section id="parent" class="screen">
+ <div class="hero"><h1>Elternbereich 👨‍👩‍👧‍👦</h1><p>Alles bleibt lokal auf diesem Gerät. Keine Registrierung, kein Server und keine laufenden Kosten.</p></div>
+ <div class="card"><h3 id="parentName">Lernstand</h3><div class="grid3">
+  <div class="stat"><b id="parTotal">0</b><span class="muted">Aufgaben</span></div>
+  <div class="stat"><b id="parRate">0%</b><span class="muted">richtig</span></div>
+  <div class="stat"><b id="parWeak">–</b><span class="muted">üben</span></div>
+ </div></div>
+ <div class="card"><h3>Wie die App trainiert</h3><p>Falsch beantwortete Aufgaben bekommen intern einen höheren Schwierigkeitswert und werden beim nächsten Training häufiger ausgewählt. Sichere Aufgaben erscheinen seltener.</p></div>
+ <button class="btn ghost" onclick="resetCurrent()">Lernstand dieses Kindes zurücksetzen</button>
+</section>
+</div>
+
+<nav class="bottom">
+<button class="nav active" data-s="home" onclick="show('home')"><span>🏠</span>Start</button>
+<button class="nav" data-s="math" onclick="show('math')"><span>🏆</span>Mathe</button>
+<button class="nav" data-s="language" onclick="openLang('de')"><span>📚</span>Sprachen</button>
+<button class="nav" data-s="progressScreen" onclick="show('progressScreen')"><span>⭐</span>Erfolge</button>
+</nav>
+
+<script>
+const defaultKids=[{id:'jasmine',name:'Jasmine',grade:'4. Klasse',avatar:'👧'},{id:'elias',name:'Elias',grade:'Grundschule',avatar:'👦'}];
+let currentKid=localStorage.getItem('lhKid')||'jasmine', op='*', range=20, mode='practice', difficulty='easy', selectedTables=[1], all=false;
+let current=null, answered=false, gameCorrect=0, gameTotal=0, startedAt=0, timer=null;
+
+function key(){return 'lernhelden_'+currentKid}
+function data(){return JSON.parse(localStorage.getItem(key())||'{"total":0,"correct":0,"stars":0,"tables":{},"facts":{}}')}
+function save(d){localStorage.setItem(key(),JSON.stringify(d))}
+function kid(){return defaultKids.find(k=>k.id===currentKid)}
+function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.s===id));refresh()}
+function renderKids(){kids.innerHTML='';defaultKids.forEach(k=>{let b=document.createElement('button');b.className='kid'+(k.id===currentKid?' active':'');b.innerHTML=`<div class=avatar>${k.avatar}</div><div class=name>${k.name}</div><div class=muted>${k.grade}</div>`;b.onclick=()=>{currentKid=k.id;localStorage.setItem('lhKid',currentKid);renderKids();refresh()};kids.appendChild(b)})}
+function renderTables(){tables.innerHTML='';for(let i=1;i<=10;i++){let b=document.createElement('button');b.className='tablebtn'+(selectedTables.includes(i)?' selected':'');b.textContent=i+'er';b.onclick=()=>{all=false;if(selectedTables.includes(i)){selectedTables=selectedTables.filter(x=>x!==i)}else selectedTables.push(i);if(!selectedTables.length)selectedTables=[i];renderTables()};tables.appendChild(b)}}
+function pickOp(b){document.querySelectorAll('.op').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');op=b.dataset.op;tableArea.style.display=(op==='*'||op==='/')?'block':'none';rangeArea.style.display=(op==='+'||op==='-'||op==='text')?'block':'none';textArea.style.display=op==='text'?'block':'none'}
+function pickDiff(b){document.querySelectorAll('.textdiff').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');difficulty=b.dataset.d}
+function pickRange(b){document.querySelectorAll('.range').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');range=+b.dataset.r}
+function pickMode(b){document.querySelectorAll('.mode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');mode=b.dataset.mode}
+function toggleAll(){all=!all;selectedTables=all?[1,2,3,4,5,6,7,8,9,10]:[1];renderTables();allTables.textContent=all?'Alle Reihen ausgewählt ✓':'Alle Reihen'}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function factWeight(id){let d=data(),f=d.facts[id];return f?Math.max(1,1+(f.wrong||0)*3-(f.correct||0)*.35):3}
+function weighted(items){let pool=[];items.forEach(x=>{let w=Math.ceil(factWeight(x.id));for(let i=0;i<w;i++)pool.push(x)});return pool[rand(0,pool.length-1)]}
+
+function makeTextTask(){
+ const names=['Mia','Ben','Lina','Noah','Emma','Paul','Sofia','Leon'];
+ const things=[
+   ['Äpfel','🍎'],['Sticker','⭐'],['Murmeln','🔵'],['Bücher','📚'],
+   ['Buntstifte','✏️'],['Karten','🃏'],['Muscheln','🐚'],['Bausteine','🧱']
+ ];
+ let n=names[rand(0,names.length-1)], thing=things[rand(0,things.length-1)][0];
+ let type=rand(0,3), a,b,ans,text,id;
+ if(difficulty==='easy'){
+   if(type===0){a=rand(2,Math.max(3,Math.floor(range*.65)));b=rand(1,Math.max(2,range-a));ans=a+b;text=`${n} hat ${a} ${thing} und bekommt noch ${b} dazu. Wie viele ${thing} hat ${n} jetzt?`;id=`txt_e_add_${a}_${b}`}
+   else if(type===1){a=rand(5,range);b=rand(1,a);ans=a-b;text=`${n} hat ${a} ${thing} und verschenkt ${b}. Wie viele bleiben übrig?`;id=`txt_e_sub_${a}_${b}`}
+   else if(type===2){a=rand(2,Math.min(10,Math.max(2,Math.floor(range/2))));b=rand(2,Math.min(10,Math.max(2,Math.floor(range/a))));ans=a*b;text=`In ${a} Schachteln liegen jeweils ${b} ${thing}. Wie viele ${thing} sind es zusammen?`;id=`txt_e_mul_${a}_${b}`}
+   else {b=rand(2,10);let q=rand(2,Math.min(10,Math.max(2,Math.floor(range/b))));a=b*q;ans=q;text=`${a} ${thing} werden gleichmäßig auf ${b} Kinder verteilt. Wie viele bekommt jedes Kind?`;id=`txt_e_div_${a}_${b}`}
+ } else if(difficulty==='medium'){
+   if(type===0){a=rand(5,Math.max(6,Math.floor(range*.7)));b=rand(2,Math.max(2,range-a));ans=a+b;text=`Beim Schulfest verkauft ${n} morgens ${a} Lose und nachmittags ${b}. Wie viele Lose wurden insgesamt verkauft?`;id=`txt_m_add_${a}_${b}`}
+   else if(type===1){a=rand(10,range);b=rand(2,a-1);ans=a-b;text=`In einer Kiste sind ${a} Buntstifte. Nach dem Unterricht sind noch ${b} da. Wie viele wurden benutzt?`;id=`txt_m_sub_${a}_${b}`}
+   else if(type===2){a=rand(2,Math.min(10,Math.max(2,Math.floor(range/3))));b=rand(2,Math.min(10,Math.max(2,Math.floor(range/a))));ans=a*b;text=`Eine Klasse stellt ${a} Tische auf. An jedem Tisch sitzen ${b} Kinder. Wie viele Kinder haben insgesamt einen Platz?`;id=`txt_m_mul_${a}_${b}`}
+   else {b=rand(2,10);let q=rand(2,Math.min(10,Math.max(2,Math.floor(range/b))));a=b*q;ans=q;text=`Für ein Spiel werden ${a} Karten gerecht auf ${b} Teams verteilt. Wie viele Karten erhält jedes Team?`;id=`txt_m_div_${a}_${b}`}
+ } else {
+   let hardType=rand(0,2);
+   if(hardType===0){a=rand(10,Math.max(10,Math.floor(range*.55)));b=rand(2,Math.max(2,Math.floor((range-a)/2)));let c=rand(1,Math.min(a+b-1,Math.max(2,Math.floor(range*.25))));ans=a+b-c;text=`${n} hat ${a} ${thing}. ${n} bekommt ${b} dazu und verschenkt danach ${c}. Wie viele ${thing} bleiben?`;id=`txt_h_as_${a}_${b}_${c}`}
+   else if(hardType===1){let packs=rand(2,Math.min(8,Math.max(2,Math.floor(range/4))));let each=rand(2,Math.min(8,Math.max(2,Math.floor(range/packs))));let give=rand(1,Math.min(packs*each-1,5));ans=packs*each-give;text=`${n} hat ${packs} Packungen mit jeweils ${each} Stickern. Danach verschenkt ${n} ${give} Sticker. Wie viele Sticker bleiben?`;id=`txt_h_ms_${packs}_${each}_${give}`}
+   else {let groups=rand(2,6),each=rand(2,8),extra=rand(1,6);a=groups*each;ans=a+extra;text=`Auf ${groups} Tischen liegen jeweils ${each} Bücher. Die Lehrerin legt noch ${extra} Bücher dazu. Wie viele Bücher sind es jetzt insgesamt?`;id=`txt_h_ma_${groups}_${each}_${extra}`}
+ }
+ return {ans,text,id,table:null};
+}
+
+function makeTask(){
+ if(op==='text') return makeTextTask();
+ let items=[];
+ if(op==='*'||op==='/'){
+   let ts=selectedTables.length?selectedTables:[1];
+   ts.forEach(t=>{for(let n=1;n<=10;n++){if(op==='*')items.push({a:t,b:n,ans:t*n,text:`${t} × ${n} = ?`,id:`mul_${t}_${n}`,table:t});else items.push({a:t*n,b:t,ans:n,text:`${t*n} ÷ ${t} = ?`,id:`div_${t}_${n}`,table:t})}})
+   return weighted(items)
+ }
+ if(op==='+'){
+   let a=rand(0,range),b=rand(0,range-a);return {a,b,ans:a+b,text:`${a} + ${b} = ?`,id:`plus_${range}_${a}_${b}`}
+ }
+ let a=rand(0,range),b=rand(0,a);return {a,b,ans:a-b,text:`${a} − ${b} = ?`,id:`minus_${range}_${a}_${b}`}
+}
+function startGame(){gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
+function nextTask(){if(mode==='ten'&&gameTotal>=10){finishGame();return}if(mode==='minute'&&Date.now()-startedAt>=60000){finishGame();return}answered=false;current=makeTask();question.textContent=current.text;question.classList.toggle('textq',op==='text');answer.value='';answer.disabled=false;answer.focus();checkBtn.style.display='block';nextBtn.style.display='none';feedback.className='feedback';feedback.textContent='Du schaffst das 💪';if(mode==='ten'){gameInfo.textContent=(gameTotal+1)+' / 10';gameBar.style.width=(gameTotal/10*100)+'%'}else if(mode==='practice'){gameInfo.textContent=gameCorrect+' richtig';gameBar.style.width='0'}}
+function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';nextBtn.style.display='block';feedback.className='feedback '+(ok?'ok':'bad');feedback.textContent=ok?'⭐ Richtig! +3 Sterne':`Noch nicht ganz. Richtig ist ${current.ans}. +1 Stern fürs Üben`;refresh();if(mode==='ten'&&gameTotal>=10)nextBtn.textContent='Ergebnis ansehen →';else nextBtn.textContent='Nächste Aufgabe →'}
+function finishGame(){if(timer)clearInterval(timer);timer=null;question.classList.remove('textq');question.textContent='Geschafft! 🎉';answer.style.display='none';checkBtn.style.display='none';nextBtn.style.display='none';feedback.className='feedback ok';feedback.innerHTML=`<b>${gameCorrect} von ${gameTotal}</b> richtig.<br>${gameTotal?Math.round(gameCorrect/gameTotal*100):0}% Trefferquote`;gameInfo.textContent='Fertig';gameBar.style.width='100%';setTimeout(()=>answer.style.display='block',100)}
+function weakest(d){let arr=Object.entries(d.tables).filter(([k,v])=>v.total>=2).map(([k,v])=>({k,rate:v.correct/v.total})).sort((a,b)=>a.rate-b.rate);return arr.length?arr[0].k+'er':'–'}
+function refresh(){let d=data(),r=d.total?Math.round(d.correct/d.total*100):0;hello.textContent='Hallo '+kid().name+' 👋';stars.textContent=d.stars+' ⭐';total.textContent=d.total;rate.textContent=r+'%';pstars.textContent=d.stars+' ⭐';ptotal.textContent=d.total;prate.textContent=r+'%';parTotal.textContent=d.total;parRate.textContent=r+'%';parWeak.textContent=weakest(d);parentName.textContent='Lernstand '+kid().name;mastery.innerHTML='';for(let i=1;i<=10;i++){let t=d.tables[i],icon='⚪',pct='';if(t&&t.total){let rr=t.correct/t.total;icon=rr>=.85&&t.total>=5?'⭐':rr>=.6?'🟡':'🟠';pct=Math.round(rr*100)+'%'}mastery.innerHTML+=`<div class=master><b>${icon} ${i}er</b>${pct||'neu'}</div>`}}
+function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
+
+let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langStart=0, langLocked=false;
+
+const DE = {
+ nouns:['Hund','Schule','Baum','Freund','Tisch','Katze','Buch','Blume','Haus','Kind','Ball','Lehrerin','Fahrrad','Wasser','Sonne'],
+ verbs:['laufen','spielen','lesen','schreiben','springen','lernen','schlafen','essen','trinken','lachen','malen','rechnen','schwimmen','singen','helfen'],
+ adjectives:['schnell','klein','fröhlich','laut','schön','warm','kalt','mutig','leise','stark','freundlich','hell','dunkel','weich','groß']
+};
+const EN = {
+ nouns:['dog','school','tree','friend','table','cat','book','flower','house','child','ball','teacher','bike','water','sun'],
+ verbs:['run','play','read','write','jump','learn','sleep','eat','drink','laugh','paint','swim','sing','help','walk'],
+ adjectives:['fast','small','happy','loud','beautiful','warm','cold','brave','quiet','strong','friendly','bright','dark','soft','big']
+};
+
+function openLang(l){lang=l;langTopic='mixed';show('language');langTitle.textContent=l==='de'?'🇩🇪 Deutsch':'🇬🇧 Englisch';langIntro.textContent=l==='de'?'Nomen, Verben und Adjektive sicher erkennen.':'Nouns, verbs, adjectives and vocabulary practice.';renderLangTopics()}
+function renderLangTopics(){
+ const topics=lang==='de'?[['mixed','🔀 Gemischt'],['nouns','🔵 Nomen'],['verbs','🔴 Verben'],['adjectives','🟢 Adjektive']]:[['mixed','🔀 Mixed'],['vocab','💬 Vokabeln'],['nouns','🔵 Nouns'],['verbs','🔴 Verbs'],['adjectives','🟢 Adjectives']];
+ langTopics.innerHTML='';
+ topics.forEach((x,i)=>{let b=document.createElement('button');b.className='mode'+(i===0?' selected':'');b.textContent=x[1];b.onclick=()=>{document.querySelectorAll('#langTopics .mode').forEach(z=>z.classList.remove('selected'));b.classList.add('selected');langTopic=x[0]};langTopics.appendChild(b)})
+}
+function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
+function shuffled(a){return [...a].sort(()=>Math.random()-.5)}
+function wordTypeTask(){
+ let data=lang==='de'?DE:EN;
+ let types=langTopic==='mixed'?['nouns','verbs','adjectives']:[langTopic];
+ let type=types[rand(0,types.length-1)], word=data[type][rand(0,data[type].length-1)];
+ let labels=lang==='de'?{nouns:'Nomen',verbs:'Verb',adjectives:'Adjektiv'}:{nouns:'Noun',verbs:'Verb',adjectives:'Adjective'};
+ return {q:lang==='de'?`Welche Wortart ist „${word}“?`:`What kind of word is “${word}”?`,opts:shuffled(Object.values(labels)),ans:labels[type],ex:lang==='de'?`„${word}“ ist ein ${labels[type]}.`:`“${word}” is a ${labels[type]}.`}
+}
+const VOCAB=[
+ ['Hund','dog'],['Katze','cat'],['Haus','house'],['Schule','school'],['Buch','book'],['Freund','friend'],['Wasser','water'],['Sonne','sun'],['Baum','tree'],['Ball','ball'],['essen','eat'],['trinken','drink'],['spielen','play'],['lesen','read'],['schnell','fast'],['klein','small'],['glücklich','happy'],['groß','big']
+];
+function vocabTask(){
+ let pair=VOCAB[rand(0,VOCAB.length-1)], forward=Math.random()<.5, correct=forward?pair[1]:pair[0], pool=VOCAB.map(x=>forward?x[1]:x[0]).filter(x=>x!==correct);
+ let opts=shuffled([correct,...shuffled(pool).slice(0,3)]);
+ return {q:forward?`Was heißt „${pair[0]}“ auf Englisch?`:`What does “${pair[1]}” mean in German?`,opts,ans:correct,ex:`${pair[0]} = ${pair[1]}`}
+}
+function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():wordTypeTask()}
+function startLangGame(){langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
+function nextLangTask(){if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
+function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');lgFeedback.textContent=(ok?'⭐ Richtig! ':'Noch nicht ganz. ')+window._lt.ex;lgNext.style.display='block';let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;save(d);refresh();if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →'}
+function finishLang(){if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
+
+renderKids();renderTables();refresh();
+</script>
+
+<div id="installTip" style="display:none;position:fixed;left:12px;right:12px;bottom:92px;background:#fff;border-radius:18px;padding:14px;box-shadow:0 12px 35px rgba(32,35,58,.22);z-index:99">
+  <b>📱 Auf dem iPhone/iPad installieren</b>
+  <div style="font-size:13px;color:#777b90;margin-top:6px;line-height:1.4">
+    In Safari auf <b>Teilen</b> tippen und <b>Zum Home-Bildschirm</b> wählen.
+  </div>
+  <button onclick="document.getElementById('installTip').style.display='none';localStorage.setItem('lhInstallTip','1')" style="margin-top:8px;border:0;background:#f0efff;color:#6c63ff;border-radius:12px;padding:9px 12px;font-weight:800">Verstanden</button>
+</div>
+<script>
+(function(){
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isiOS && !standalone && !localStorage.getItem('lhInstallTip')){
+    setTimeout(()=>document.getElementById('installTip').style.display='block',1200);
+  }
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
+})();
+</script>
+
+</body></html>
