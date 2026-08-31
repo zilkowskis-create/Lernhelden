@@ -29,10 +29,34 @@
 .bottom{position:fixed;left:50%;bottom:9px;transform:translateX(-50%);width:min(590px,calc(100% - 20px));display:grid;grid-template-columns:repeat(4,1fr);background:#ffffffee;backdrop-filter:blur(14px);padding:7px;border-radius:21px;box-shadow:0 12px 35px #20233a24}.nav{border:0;background:none;color:#898c9e;padding:7px 2px;font-size:11px}.nav span{display:block;font-size:21px}.nav.active{color:var(--p);font-weight:850}.screen{display:none}.screen.active{display:block}
 .mastery{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.master{padding:9px 4px;border-radius:12px;background:#f7f7fb;text-align:center;font-size:12px}.master b{display:block;font-size:16px}
 @media(max-width:400px){.grid3{grid-template-columns:1fr}.ranges,.modes{grid-template-columns:1fr}.tables,.mastery{grid-template-columns:repeat(5,1fr)}}
-.answer{width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:15px;padding:13px;margin:6px 0;font-weight:800}.answer.correct{border-color:var(--ok);background:#effaf5}.answer.wrong{border-color:var(--bad);background:#fff0f0}</style></head>
+.answer{width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:15px;padding:13px;margin:6px 0;font-weight:800}.answer.correct{border-color:var(--ok);background:#effaf5}.answer.wrong{border-color:var(--bad);background:#fff0f0}
+.celebration-layer{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
+.celebration-item{position:absolute;left:50%;top:60%;font-size:30px;animation:celebrateFly 1.4s ease-out forwards}
+@keyframes celebrateFly{
+  0%{transform:translate(-50%,-50%) scale(.5);opacity:0}
+  15%{opacity:1}
+  100%{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.25) rotate(var(--r));opacity:0}
+}
+.effect-settings{margin-top:14px;padding:14px;border-radius:16px;background:rgba(255,255,255,.75)}
+.effect-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}
+.switch{position:relative;display:inline-block;width:48px;height:28px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#c9ccd6;border-radius:28px;transition:.2s}
+.slider:before{content:"";position:absolute;height:22px;width:22px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s}
+.switch input:checked + .slider{background:#6c63ff}
+.switch input:checked + .slider:before{transform:translateX(20px)}
+
+</style></head>
 <body>
 <div class="app">
 <div class="top"><div class="logo">Lern<i>helden</i> <span>✨</span></div><button class="pill" style="border:0" onclick="show('parent')">👨‍👩‍👧 Eltern</button></div>
+<div class="effect-settings">
+  <h3 style="margin:0 0 8px">✨ Motivationseffekte</h3>
+  <div class="effect-row"><span>Erfolgs-Sound</span><label class="switch"><input id="soundToggle" type="checkbox" checked><span class="slider"></span></label></div>
+  <div class="effect-row"><span>Sterne & Herzchen</span><label class="switch"><input id="effectsToggle" type="checkbox" checked><span class="slider"></span></label></div>
+  <div class="muted" style="font-size:.9rem">Du kannst beide Effekte jederzeit an- oder ausschalten.</div>
+</div>
+
 
 <section id="home" class="screen active">
  <div class="hero"><h1 id="hello">Hallo 👋</h1><p>Kurze Übungen, klare Erfolge. Dein Lernstand bleibt nur auf diesem Gerät gespeichert.</p></div>
@@ -260,7 +284,7 @@ function playApplause(){
 function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';nextBtn.style.display='block';feedback.className='feedback '+(ok?'ok':'bad');
  if(ok){
    feedback.textContent='👏 Super! Richtig! +3 Sterne';
-   playApplause();
+   celebrateCorrect();
  }else{
    if(op==='text' && current.explanation){
      feedback.innerHTML=`Noch nicht ganz. <b>Richtig ist ${current.ans}.</b><br><br>${current.explanation}<br><span class="muted">+1 Stern fürs Üben</span>`;
@@ -314,7 +338,7 @@ function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():word
 function startLangGame(){langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
 function nextLangTask(){if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
 function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');
- if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex;playApplause();}
+ if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex;celebrateCorrect();}
  else{lgFeedback.textContent='Noch nicht ganz. '+window._lt.ex;}
  lgNext.style.display='block';let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;save(d);refresh();if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →'}
 function finishLang(){if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
@@ -339,6 +363,62 @@ renderKids();renderTables();refresh();
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
+})();
+</script>
+
+
+<div class="celebration-layer" id="celebrationLayer"></div>
+<script>
+(function(){
+  const SOUND_KEY='lernhelden_sound_enabled';
+  const EFFECT_KEY='lernhelden_effects_enabled';
+  const getBool=(k,d=true)=>localStorage.getItem(k)===null?d:localStorage.getItem(k)==='true';
+
+  window.playSuccessSound=function(){
+    if(!getBool(SOUND_KEY,true)) return;
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      const ctx=new AC(), now=ctx.currentTime;
+      [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(f,now+i*.08);
+        g.gain.setValueAtTime(.0001,now+i*.08);
+        g.gain.exponentialRampToValueAtTime(.12,now+i*.08+.015);
+        g.gain.exponentialRampToValueAtTime(.0001,now+i*.08+.22);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now+i*.08); o.stop(now+i*.08+.24);
+      });
+      setTimeout(()=>ctx.close().catch(()=>{}),800);
+    }catch(e){}
+  };
+
+  window.launchCelebration=function(){
+    if(!getBool(EFFECT_KEY,true)) return;
+    const layer=document.getElementById('celebrationLayer');
+    if(!layer) return;
+    const icons=['⭐','💖','🌟','💕','✨','💗'];
+    for(let i=0;i<18;i++){
+      const el=document.createElement('span');
+      el.className='celebration-item';
+      el.textContent=icons[Math.floor(Math.random()*icons.length)];
+      el.style.setProperty('--x',(Math.random()*360-180)+'px');
+      el.style.setProperty('--y',(-120-Math.random()*300)+'px');
+      el.style.setProperty('--r',(Math.random()*160-80)+'deg');
+      el.style.left=(45+Math.random()*10)+'%';
+      el.style.top=(58+Math.random()*6)+'%';
+      layer.appendChild(el);
+      setTimeout(()=>el.remove(),1700);
+    }
+  };
+
+  window.celebrateCorrect=function(){playSuccessSound();launchCelebration();};
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const s=document.getElementById('soundToggle');
+    const e=document.getElementById('effectsToggle');
+    if(s){s.checked=getBool(SOUND_KEY,true);s.onchange=()=>localStorage.setItem(SOUND_KEY,String(s.checked))}
+    if(e){e.checked=getBool(EFFECT_KEY,true);e.onchange=()=>localStorage.setItem(EFFECT_KEY,String(e.checked))}
+  });
 })();
 </script>
 
