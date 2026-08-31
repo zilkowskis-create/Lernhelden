@@ -205,7 +205,23 @@ function makeTextTask(){
    else if(hardType===1){let packs=rand(2,Math.min(8,Math.max(2,Math.floor(range/4))));let each=rand(2,Math.min(8,Math.max(2,Math.floor(range/packs))));let give=rand(1,Math.min(packs*each-1,5));ans=packs*each-give;text=`${n} hat ${packs} Packungen mit jeweils ${each} Stickern. Danach verschenkt ${n} ${give} Sticker. Wie viele Sticker bleiben?`;id=`txt_h_ms_${packs}_${each}_${give}`}
    else {let groups=rand(2,6),each=rand(2,8),extra=rand(1,6);a=groups*each;ans=a+extra;text=`Auf ${groups} Tischen liegen jeweils ${each} Bücher. Die Lehrerin legt noch ${extra} Bücher dazu. Wie viele Bücher sind es jetzt insgesamt?`;id=`txt_h_ma_${groups}_${each}_${extra}`}
  }
- return {ans,text,id,table:null};
+ let explanation='';
+ if(difficulty==='easy'){
+   if(text.includes('bekommt noch')) explanation=`Du rechnest ${a} + ${b}. Das ergibt ${ans}.`;
+   else if(text.includes('verschenkt') && !text.includes('Packungen')) explanation=`Du rechnest ${a} − ${b}. Das ergibt ${ans}.`;
+   else if(text.includes('Schachteln')) explanation=`${a} Schachteln mit je ${b} bedeutet ${a} × ${b} = ${ans}.`;
+   else if(text.includes('gleichmäßig')) explanation=`Gleichmäßig verteilen bedeutet teilen: ${a} ÷ ${b} = ${ans}.`;
+ } else if(difficulty==='medium'){
+   if(text.includes('morgens')) explanation=`Gesucht ist die Gesamtzahl. Deshalb rechnest du ${a} + ${b} = ${ans}.`;
+   else if(text.includes('noch')) explanation=`Du kennst Anfang und Rest. Deshalb rechnest du ${a} − ${b} = ${ans}.`;
+   else if(text.includes('Tische')) explanation=`${a} Tische mit je ${b} Kindern bedeutet ${a} × ${b} = ${ans}.`;
+   else if(text.includes('gerecht')) explanation=`Gerecht verteilen bedeutet teilen: ${a} ÷ ${b} = ${ans}.`;
+ } else {
+   if(text.includes('bekommt') && text.includes('verschenkt')) explanation=`Zuerst addierst du ${a} + ${b}. Danach ziehst du ${c} ab. So kommst du auf ${ans}.`;
+   else if(text.includes('Packungen')) explanation=`Zuerst rechnest du ${packs} × ${each}. Danach ziehst du ${give} ab. Ergebnis: ${ans}.`;
+   else if(text.includes('Lehrerin')) explanation=`Zuerst ${groups} × ${each} = ${a}. Danach ${a} + ${extra} = ${ans}.`;
+ }
+ return {ans,text,id,table:null,explanation};
 }
 
 function makeTask(){
@@ -223,7 +239,36 @@ function makeTask(){
 }
 function startGame(){gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
 function nextTask(){if(mode==='ten'&&gameTotal>=10){finishGame();return}if(mode==='minute'&&Date.now()-startedAt>=60000){finishGame();return}answered=false;current=makeTask();question.textContent=current.text;question.classList.toggle('textq',op==='text');answer.value='';answer.disabled=false;answer.focus();checkBtn.style.display='block';nextBtn.style.display='none';feedback.className='feedback';feedback.textContent='Du schaffst das 💪';if(mode==='ten'){gameInfo.textContent=(gameTotal+1)+' / 10';gameBar.style.width=(gameTotal/10*100)+'%'}else if(mode==='practice'){gameInfo.textContent=gameCorrect+' richtig';gameBar.style.width='0'}}
-function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';nextBtn.style.display='block';feedback.className='feedback '+(ok?'ok':'bad');feedback.textContent=ok?'⭐ Richtig! +3 Sterne':`Noch nicht ganz. Richtig ist ${current.ans}. +1 Stern fürs Üben`;refresh();if(mode==='ten'&&gameTotal>=10)nextBtn.textContent='Ergebnis ansehen →';else nextBtn.textContent='Nächste Aufgabe →'}
+
+function playApplause(){
+ try{
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const now=ctx.currentTime;
+  for(let i=0;i<8;i++){
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='triangle';
+    osc.frequency.value=650+Math.random()*550;
+    gain.gain.setValueAtTime(0.0001,now+i*.055);
+    gain.gain.exponentialRampToValueAtTime(.07,now+i*.055+.01);
+    gain.gain.exponentialRampToValueAtTime(.0001,now+i*.055+.09);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now+i*.055); osc.stop(now+i*.055+.1);
+  }
+ }catch(e){}
+}
+
+function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';nextBtn.style.display='block';feedback.className='feedback '+(ok?'ok':'bad');
+ if(ok){
+   feedback.textContent='👏 Super! Richtig! +3 Sterne';
+   playApplause();
+ }else{
+   if(op==='text' && current.explanation){
+     feedback.innerHTML=`Noch nicht ganz. <b>Richtig ist ${current.ans}.</b><br><br>${current.explanation}<br><span class="muted">+1 Stern fürs Üben</span>`;
+   }else{
+     feedback.textContent=`Noch nicht ganz. Richtig ist ${current.ans}. +1 Stern fürs Üben`;
+   }
+ }
+ refresh();if(mode==='ten'&&gameTotal>=10)nextBtn.textContent='Ergebnis ansehen →';else nextBtn.textContent='Nächste Aufgabe →'}
 function finishGame(){if(timer)clearInterval(timer);timer=null;question.classList.remove('textq');question.textContent='Geschafft! 🎉';answer.style.display='none';checkBtn.style.display='none';nextBtn.style.display='none';feedback.className='feedback ok';feedback.innerHTML=`<b>${gameCorrect} von ${gameTotal}</b> richtig.<br>${gameTotal?Math.round(gameCorrect/gameTotal*100):0}% Trefferquote`;gameInfo.textContent='Fertig';gameBar.style.width='100%';setTimeout(()=>answer.style.display='block',100)}
 function weakest(d){let arr=Object.entries(d.tables).filter(([k,v])=>v.total>=2).map(([k,v])=>({k,rate:v.correct/v.total})).sort((a,b)=>a.rate-b.rate);return arr.length?arr[0].k+'er':'–'}
 function refresh(){let d=data(),r=d.total?Math.round(d.correct/d.total*100):0;hello.textContent='Hallo '+kid().name+' 👋';stars.textContent=d.stars+' ⭐';total.textContent=d.total;rate.textContent=r+'%';pstars.textContent=d.stars+' ⭐';ptotal.textContent=d.total;prate.textContent=r+'%';parTotal.textContent=d.total;parRate.textContent=r+'%';parWeak.textContent=weakest(d);parentName.textContent='Lernstand '+kid().name;mastery.innerHTML='';for(let i=1;i<=10;i++){let t=d.tables[i],icon='⚪',pct='';if(t&&t.total){let rr=t.correct/t.total;icon=rr>=.85&&t.total>=5?'⭐':rr>=.6?'🟡':'🟠';pct=Math.round(rr*100)+'%'}mastery.innerHTML+=`<div class=master><b>${icon} ${i}er</b>${pct||'neu'}</div>`}}
@@ -268,7 +313,10 @@ function vocabTask(){
 function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():wordTypeTask()}
 function startLangGame(){langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
 function nextLangTask(){if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
-function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');lgFeedback.textContent=(ok?'⭐ Richtig! ':'Noch nicht ganz. ')+window._lt.ex;lgNext.style.display='block';let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;save(d);refresh();if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →'}
+function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');
+ if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex;playApplause();}
+ else{lgFeedback.textContent='Noch nicht ganz. '+window._lt.ex;}
+ lgNext.style.display='block';let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;save(d);refresh();if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →'}
 function finishLang(){if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
 
 renderKids();renderTables();refresh();
