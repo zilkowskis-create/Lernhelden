@@ -86,6 +86,19 @@
 .parent-time-card strong{font-size:1.35rem;display:block;margin-top:4px}
 @media(max-width:520px){.parent-time-grid{grid-template-columns:1fr}}
 
+
+.update-banner{
+ position:fixed;left:12px;right:12px;bottom:14px;z-index:10000;
+ display:none;align-items:center;justify-content:space-between;gap:12px;
+ padding:14px 16px;border-radius:18px;background:#fff;
+ box-shadow:0 10px 35px rgba(0,0,0,.18);font-weight:700;
+}
+.update-banner.show{display:flex}
+.update-banner button{
+ border:0;border-radius:14px;padding:10px 14px;cursor:pointer;
+ background:#6c63ff;color:#fff;font-weight:800;
+}
+
 </style></head>
 <body>
 <div class="app">
@@ -501,19 +514,22 @@ renderKids();renderTables();refresh();
   window.playSuccessSound=function(){
     if(!getBool(SOUND_KEY,true)) return;
     try{
-      const AC=window.AudioContext||window.webkitAudioContext;
-      const ctx=new AC(), now=ctx.currentTime;
-      [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
-        const o=ctx.createOscillator(), g=ctx.createGain();
-        o.type='sine';
-        o.frequency.setValueAtTime(f,now+i*.085);
-        g.gain.setValueAtTime(.0001,now+i*.085);
-        g.gain.exponentialRampToValueAtTime(.11,now+i*.085+.015);
-        g.gain.exponentialRampToValueAtTime(.0001,now+i*.085+.22);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(now+i*.085); o.stop(now+i*.085+.24);
-      });
-      setTimeout(()=>ctx.close().catch(()=>{}),900);
+      if('speechSynthesis' in window){
+        window.speechSynthesis.cancel();
+        const msg=new SpeechSynthesisUtterance('Bravo, gut gemacht!');
+        msg.lang='de-DE';
+        msg.rate=0.95;
+        msg.pitch=1.15;
+        msg.volume=0.55;
+
+        const voices=window.speechSynthesis.getVoices();
+        const germanVoices=voices.filter(v=>String(v.lang||'').toLowerCase().startsWith('de'));
+        const preferred=germanVoices.find(v=>/female|anna|katja|petra|helena|vicki/i.test(v.name))
+          || germanVoices[0];
+        if(preferred) msg.voice=preferred;
+
+        window.speechSynthesis.speak(msg);
+      }
     }catch(e){}
   };
 
@@ -559,6 +575,71 @@ renderKids();renderTables();refresh();
     }
     updateParentTimes();
   });
+})();
+</script>
+
+
+<div class="update-banner" id="updateBanner">
+  <span>🎉 Neue Lernhelden-Version verfügbar</span>
+  <button id="updateNowBtn">Aktualisieren</button>
+</div>
+
+<script>
+(function(){
+  const VERSION='6.0.0';
+  window.LERNHELDEN_VERSION=VERSION;
+
+  async function registerAndWatch(){
+    if(!('serviceWorker' in navigator)) return;
+    try{
+      const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+
+      function showUpdate(worker){
+        const banner=document.getElementById('updateBanner');
+        const btn=document.getElementById('updateNowBtn');
+        if(!banner || !btn || !worker) return;
+        banner.classList.add('show');
+        btn.onclick=()=>{
+          worker.postMessage({type:'SKIP_WAITING'});
+          btn.textContent='Wird aktualisiert…';
+          btn.disabled=true;
+        };
+      }
+
+      if(reg.waiting && navigator.serviceWorker.controller){
+        showUpdate(reg.waiting);
+      }
+
+      reg.addEventListener('updatefound',()=>{
+        const worker=reg.installing;
+        if(!worker) return;
+        worker.addEventListener('statechange',()=>{
+          if(worker.state==='installed' && navigator.serviceWorker.controller){
+            showUpdate(worker);
+          }
+        });
+      });
+
+      // Check immediately and then periodically while the app is open.
+      reg.update().catch(()=>{});
+      setInterval(()=>reg.update().catch(()=>{}), 15*60*1000);
+
+      document.addEventListener('visibilitychange',()=>{
+        if(!document.hidden) reg.update().catch(()=>{});
+      });
+
+      let refreshing=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(refreshing) return;
+        refreshing=true;
+        window.location.reload();
+      });
+    }catch(e){
+      console.log('Update check unavailable',e);
+    }
+  }
+
+  window.addEventListener('load',registerAndWatch);
 })();
 </script>
 
