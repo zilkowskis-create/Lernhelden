@@ -1,11 +1,21 @@
-LERNHELDEN – Motivation v2
+LERNHELDEN – Elternbereich v3
 
 Neu:
-- schöner Erfolgs-Sound bei richtigen Antworten
-- fliegende Sterne, Herzchen und Glitzer
-- Sound im Elternbereich an/aus
-- Sterne & Herzchen im Elternbereich an/aus
+- Elternbereich mit fest sichtbaren Schaltern
+- Erfolgs-Sound AN/AUS
+- Sterne & Herzchen AN/AUS
+- aktive Lernzeit heute für Jasmine und Elias
+- Lernzeit stoppt nach 60 Sekunden ohne Eingabe
+- Motivationseffekte bleiben bei richtigen Antworten erhalten
 - Erklärungen bei falschen Textaufgaben bleiben erhalten
 
+Wichtig:
+Die Lernzeit wird aktuell noch lokal pro Gerät gespeichert.
+Für gemeinsame Werte über mehrere Geräte brauchen wir später die Supabase-Synchronisierung.
+
 GitHub:
-ZIP entpacken, alle Dateien in das bestehende Repository hochladen, vorhandene Dateien ersetzen und Commit changes.
+1. ZIP entpacken.
+2. Alle Dateien in dein bestehendes Repository hochladen.
+3. Vorhandene Dateien ersetzen.
+4. Commit changes.
+5. GitHub Pages neu laden.

@@ -46,16 +46,51 @@
 .switch input:checked + .slider{background:#6c63ff}
 .switch input:checked + .slider:before{transform:translateX(20px)}
 
+
+.parent-tools{
+  margin-top:18px;
+  padding:16px;
+  border-radius:18px;
+  background:rgba(255,255,255,.92);
+  box-shadow:0 8px 28px rgba(0,0,0,.08);
+}
+.parent-tools h3{margin:0 0 12px}
+.setting-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 0;
+  border-bottom:1px solid rgba(0,0,0,.08);
+}
+.setting-row:last-child{border-bottom:0}
+.setting-copy{display:flex;flex-direction:column;gap:2px}
+.setting-copy small{opacity:.65}
+.switch{position:relative;display:inline-block;width:52px;height:30px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#c9ccd6;border-radius:30px;transition:.2s}
+.slider:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.switch input:checked + .slider{background:#6c63ff}
+.switch input:checked + .slider:before{transform:translateX(22px)}
+.parent-time-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin:12px 0 4px;
+}
+.parent-time-card{
+  padding:14px;
+  border-radius:16px;
+  background:rgba(108,99,255,.08);
+}
+.parent-time-card strong{font-size:1.35rem;display:block;margin-top:4px}
+@media(max-width:520px){.parent-time-grid{grid-template-columns:1fr}}
+
 </style></head>
 <body>
 <div class="app">
 <div class="top"><div class="logo">Lern<i>helden</i> <span>✨</span></div><button class="pill" style="border:0" onclick="show('parent')">👨‍👩‍👧 Eltern</button></div>
-<div class="effect-settings">
-  <h3 style="margin:0 0 8px">✨ Motivationseffekte</h3>
-  <div class="effect-row"><span>Erfolgs-Sound</span><label class="switch"><input id="soundToggle" type="checkbox" checked><span class="slider"></span></label></div>
-  <div class="effect-row"><span>Sterne & Herzchen</span><label class="switch"><input id="effectsToggle" type="checkbox" checked><span class="slider"></span></label></div>
-  <div class="muted" style="font-size:.9rem">Du kannst beide Effekte jederzeit an- oder ausschalten.</div>
-</div>
+
 
 
 <section id="home" class="screen active">
@@ -166,7 +201,43 @@
 </section>
 
 <section id="parent" class="screen">
- <div class="hero"><h1>Elternbereich 👨‍👩‍👧‍👦</h1><p>Alles bleibt lokal auf diesem Gerät. Keine Registrierung, kein Server und keine laufenden Kosten.</p></div>
+ <div class="hero"><h1>Elternbereich 👨‍👩‍👧‍👦</h1>
+<div class="parent-tools" id="parentControlsPanel">
+  <h3>👨‍👩‍👧‍👦 Elternbereich</h3>
+  <div class="parent-time-grid">
+    <div class="parent-time-card">
+      <span>Jasmine heute</span>
+      <strong id="jasmineMinutes">0 Min.</strong>
+    </div>
+    <div class="parent-time-card">
+      <span>Elias heute</span>
+      <strong id="eliasMinutes">0 Min.</strong>
+    </div>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-copy">
+      <b>🔊 Erfolgs-Sound</b>
+      <small>Sound bei richtigen Antworten</small>
+    </div>
+    <label class="switch">
+      <input id="soundToggle" type="checkbox" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="setting-row">
+    <div class="setting-copy">
+      <b>⭐💖 Sterne & Herzchen</b>
+      <small>Fliegende Animation bei richtigen Antworten</small>
+    </div>
+    <label class="switch">
+      <input id="effectsToggle" type="checkbox" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+<p>Alles bleibt lokal auf diesem Gerät. Keine Registrierung, kein Server und keine laufenden Kosten.</p></div>
  <div class="card"><h3 id="parentName">Lernstand</h3><div class="grid3">
   <div class="stat"><b id="parTotal">0</b><span class="muted">Aufgaben</span></div>
   <div class="stat"><b id="parRate">0%</b><span class="muted">richtig</span></div>
@@ -368,11 +439,64 @@ renderKids();renderTables();refresh();
 
 
 <div class="celebration-layer" id="celebrationLayer"></div>
+
+
+
 <script>
 (function(){
   const SOUND_KEY='lernhelden_sound_enabled';
   const EFFECT_KEY='lernhelden_effects_enabled';
-  const getBool=(k,d=true)=>localStorage.getItem(k)===null?d:localStorage.getItem(k)==='true';
+  const ACTIVE_KID_KEY='activeKid';
+  let lastActivity=Date.now();
+  let lastTick=Date.now();
+
+  function getBool(key, def=true){
+    const v=localStorage.getItem(key);
+    return v===null ? def : v==='true';
+  }
+
+  function todayKey(){
+    const d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+
+  function kidName(){
+    const raw=(localStorage.getItem(ACTIVE_KID_KEY)||localStorage.getItem('selectedKid')||localStorage.getItem('kid')||'').toLowerCase();
+    if(raw.includes('jasmine')) return 'Jasmine';
+    if(raw.includes('elias')) return 'Elias';
+    return null;
+  }
+
+  function minuteStoreKey(kid){
+    return 'lernhelden_minutes_'+kid.toLowerCase()+'_'+todayKey();
+  }
+
+  function addActiveSeconds(){
+    const now=Date.now();
+    const elapsed=Math.min((now-lastTick)/1000, 15);
+    lastTick=now;
+    if(document.hidden) return;
+    if(now-lastActivity > 60000) return; // stop after 60 sec inactivity
+    const kid=kidName();
+    if(!kid) return;
+    const secKey=minuteStoreKey(kid)+'_seconds';
+    const old=Number(localStorage.getItem(secKey)||0);
+    localStorage.setItem(secKey,String(old+elapsed));
+    updateParentTimes();
+  }
+
+  function updateParentTimes(){
+    ['Jasmine','Elias'].forEach(k=>{
+      const sec=Number(localStorage.getItem(minuteStoreKey(k)+'_seconds')||0);
+      const el=document.getElementById(k.toLowerCase()+'Minutes');
+      if(el) el.textContent=Math.floor(sec/60)+' Min.';
+    });
+  }
+
+  ['click','touchstart','keydown','input'].forEach(evt=>{
+    document.addEventListener(evt,()=>{lastActivity=Date.now();},{passive:true});
+  });
+  setInterval(addActiveSeconds,10000);
 
   window.playSuccessSound=function(){
     if(!getBool(SOUND_KEY,true)) return;
@@ -381,21 +505,27 @@ renderKids();renderTables();refresh();
       const ctx=new AC(), now=ctx.currentTime;
       [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
         const o=ctx.createOscillator(), g=ctx.createGain();
-        o.type='sine'; o.frequency.setValueAtTime(f,now+i*.08);
-        g.gain.setValueAtTime(.0001,now+i*.08);
-        g.gain.exponentialRampToValueAtTime(.12,now+i*.08+.015);
-        g.gain.exponentialRampToValueAtTime(.0001,now+i*.08+.22);
+        o.type='sine';
+        o.frequency.setValueAtTime(f,now+i*.085);
+        g.gain.setValueAtTime(.0001,now+i*.085);
+        g.gain.exponentialRampToValueAtTime(.11,now+i*.085+.015);
+        g.gain.exponentialRampToValueAtTime(.0001,now+i*.085+.22);
         o.connect(g); g.connect(ctx.destination);
-        o.start(now+i*.08); o.stop(now+i*.08+.24);
+        o.start(now+i*.085); o.stop(now+i*.085+.24);
       });
-      setTimeout(()=>ctx.close().catch(()=>{}),800);
+      setTimeout(()=>ctx.close().catch(()=>{}),900);
     }catch(e){}
   };
 
   window.launchCelebration=function(){
     if(!getBool(EFFECT_KEY,true)) return;
-    const layer=document.getElementById('celebrationLayer');
-    if(!layer) return;
+    let layer=document.getElementById('celebrationLayer');
+    if(!layer){
+      layer=document.createElement('div');
+      layer.id='celebrationLayer';
+      layer.className='celebration-layer';
+      document.body.appendChild(layer);
+    }
     const icons=['⭐','💖','🌟','💕','✨','💗'];
     for(let i=0;i<18;i++){
       const el=document.createElement('span');
@@ -411,13 +541,23 @@ renderKids();renderTables();refresh();
     }
   };
 
-  window.celebrateCorrect=function(){playSuccessSound();launchCelebration();};
+  window.celebrateCorrect=function(){
+    window.playSuccessSound();
+    window.launchCelebration();
+  };
 
   document.addEventListener('DOMContentLoaded',()=>{
     const s=document.getElementById('soundToggle');
     const e=document.getElementById('effectsToggle');
-    if(s){s.checked=getBool(SOUND_KEY,true);s.onchange=()=>localStorage.setItem(SOUND_KEY,String(s.checked))}
-    if(e){e.checked=getBool(EFFECT_KEY,true);e.onchange=()=>localStorage.setItem(EFFECT_KEY,String(e.checked))}
+    if(s){
+      s.checked=getBool(SOUND_KEY,true);
+      s.addEventListener('change',()=>localStorage.setItem(SOUND_KEY,String(s.checked)));
+    }
+    if(e){
+      e.checked=getBool(EFFECT_KEY,true);
+      e.addEventListener('change',()=>localStorage.setItem(EFFECT_KEY,String(e.checked)));
+    }
+    updateParentTimes();
   });
 })();
 </script>
