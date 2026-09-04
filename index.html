@@ -99,7 +99,40 @@
  background:#6c63ff;color:#fff;font-weight:800;
 }
 
-</style></head>
+</style>
+<style>
+#profileSetupPanel{
+  margin:18px auto;max-width:720px;padding:18px;border:1px solid #ddd;border-radius:16px;
+  background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.06)
+}
+#profileSetupPanel h3{margin-top:0}
+.profile-row{display:grid;grid-template-columns:1fr 120px auto;gap:8px;margin:8px 0}
+.profile-row input,.profile-row select{
+  padding:10px;border:1px solid #ccc;border-radius:10px;font-size:16px
+}
+.profile-row button{padding:10px 12px;border-radius:10px;border:0;cursor:pointer}
+.profile-card{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;margin:8px 0;border:1px solid #e5e5e5;border-radius:12px
+}
+.profile-card.active{outline:2px solid #999}
+.profile-card .meta{font-size:13px;opacity:.7}
+.profile-actions{display:flex;gap:6px;flex-wrap:wrap}
+.profile-actions button{padding:7px 9px;border-radius:8px;border:1px solid #ccc;background:#fafafa}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+#cloudAccountBox{max-width:720px;margin:18px auto;padding:18px;border:1px solid #ddd;border-radius:16px;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+#cloudAccountBox input{width:100%;box-sizing:border-box;padding:10px;margin:5px 0;border:1px solid #ccc;border-radius:10px;font-size:16px}
+#cloudAccountBox button{padding:10px 14px;margin:5px 5px 5px 0;border:0;border-radius:10px;cursor:pointer}
+#cloudStatus{font-size:14px;margin-top:8px}
+.cloud-ok{color:#267a36}.cloud-warn{color:#9a6500}.cloud-error{color:#a12d2d}
+</style>
+
+</head>
 <body>
 <div class="app">
 <div class="top"><div class="logo">Lern<i>helden</i> <span>✨</span></div><button class="pill" style="border:0" onclick="show('parent')">👨‍👩‍👧 Eltern</button></div>
@@ -516,15 +549,15 @@ renderKids();renderTables();refresh();
     try{
       if('speechSynthesis' in window){
         window.speechSynthesis.cancel();
-        const msg=new SpeechSynthesisUtterance('Bravo, gut gemacht!');
+        const msg=new SpeechSynthesisUtterance('Bravo!');
         msg.lang='de-DE';
-        msg.rate=0.95;
-        msg.pitch=1.15;
-        msg.volume=0.55;
+        msg.rate=1.08;
+        msg.pitch=1.45;
+        msg.volume=0.48;
 
         const voices=window.speechSynthesis.getVoices();
         const germanVoices=voices.filter(v=>String(v.lang||'').toLowerCase().startsWith('de'));
-        const preferred=germanVoices.find(v=>/female|anna|katja|petra|helena|vicki/i.test(v.name))
+        const preferred=germanVoices.find(v=>/anna|katja|helena|vicki|female|siri/i.test(v.name))
           || germanVoices[0];
         if(preferred) msg.voice=preferred;
 
@@ -641,6 +674,507 @@ renderKids();renderTables();refresh();
 
   window.addEventListener('load',registerAndWatch);
 })();
+</script>
+
+
+<script>
+(function(){
+  const DE_NOUNS = ['Haus','Hund','Katze','Schule','Tisch','Ball','Blume','Auto','Kind','Buch','Apfel','Baum'];
+  const DE_VERBS = ['laufen','spielen','lesen','schreiben','springen','essen','trinken','lernen','malen','schlafen','singen','rechnen'];
+  const DE_ADJECTIVES = ['groß','klein','schnell','langsam','schön','laut','leise','fröhlich','warm','kalt','hell','stark'];
+
+  function norm(v){
+    v=String(v||'').toLowerCase();
+    if(v.includes('nomen') || v.includes('substantiv')) return 'Nomen';
+    if(v.includes('verb')) return 'Verb';
+    if(v.includes('adjektiv')) return 'Adjektiv';
+    return 'Gemischt';
+  }
+
+  window.generateGermanWordTask = function(category){
+    const cat=norm(category);
+    let pool=[];
+    if(cat==='Nomen') pool=DE_NOUNS.map(w=>[w,'Nomen']);
+    else if(cat==='Verb') pool=DE_VERBS.map(w=>[w,'Verb']);
+    else if(cat==='Adjektiv') pool=DE_ADJECTIVES.map(w=>[w,'Adjektiv']);
+    else pool=[
+      ...DE_NOUNS.map(w=>[w,'Nomen']),
+      ...DE_VERBS.map(w=>[w,'Verb']),
+      ...DE_ADJECTIVES.map(w=>[w,'Adjektiv'])
+    ];
+    const [word,answer]=pool[Math.floor(Math.random()*pool.length)];
+    return {
+      q:`Welche Wortart ist „${word}“?`,
+      ans:answer,
+      options:['Nomen','Verb','Adjektiv'],
+      ex:`„${word}“ ist ein ${answer}.`
+    };
+  };
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('button,option,label').forEach(el=>{
+      const t=(el.textContent||'').trim();
+      if(/^Substantive?$/i.test(t) || /^Nomen$/i.test(t)) el.textContent='Nomen';
+      if(/^Verben?$/i.test(t) || /^Verb$/i.test(t)) el.textContent='Verb';
+      if(/^Adjektive?$/i.test(t) || /^Adjektiv$/i.test(t)) el.textContent='Adjektiv';
+    });
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+ const nouns=[
+  {w:'Hund',a:'der',pl:'Hunde'},{w:'Katze',a:'die',pl:'Katzen'},{w:'Haus',a:'das',pl:'Häuser'},
+  {w:'Schule',a:'die',pl:'Schulen'},{w:'Tisch',a:'der',pl:'Tische'},{w:'Blume',a:'die',pl:'Blumen'},
+  {w:'Auto',a:'das',pl:'Autos'},{w:'Buch',a:'das',pl:'Bücher'},{w:'Apfel',a:'der',pl:'Äpfel'},
+  {w:'Baum',a:'der',pl:'Bäume'}
+ ];
+ const verbs=[
+  {inf:'laufen',form:'läuft',s:'Das Kind ___ schnell.'},{inf:'spielen',form:'spielt',s:'Elias ___ mit dem Ball.'},
+  {inf:'lesen',form:'liest',s:'Jasmine ___ ein Buch.'},{inf:'schreiben',form:'schreibt',s:'Das Kind ___ einen Satz.'},
+  {inf:'essen',form:'isst',s:'Der Hund ___ sein Futter.'},{inf:'trinken',form:'trinkt',s:'Das Mädchen ___ Wasser.'}
+ ];
+ const adjs=[
+  {w:'groß',opp:'klein'},{w:'schnell',opp:'langsam'},{w:'laut',opp:'leise'},
+  {w:'warm',opp:'kalt'},{w:'hell',opp:'dunkel'},{w:'stark',opp:'schwach'}
+ ];
+ const pick=a=>a[Math.floor(Math.random()*a.length)];
+ const shuffle=a=>a.slice().sort(()=>Math.random()-.5);
+
+ window.generateGermanLearningTask=function(category){
+   const c=String(category||'').toLowerCase();
+   if(c.includes('nomen')){
+     const n=pick(nouns);
+     if(Math.random()<.55) return {q:`Welcher Artikel gehört zu „${n.w}“?`,ans:n.a,options:['der','die','das'],ex:`Richtig heißt es: ${n.a} ${n.w}.`};
+     let wrong=shuffle(nouns.filter(x=>x.pl!==n.pl).map(x=>x.pl)).slice(0,2);
+     return {q:`Wie lautet die Mehrzahl von „${n.w}“?`,ans:n.pl,options:shuffle([n.pl,...wrong]),ex:`Die Mehrzahl von ${n.w} ist ${n.pl}.`};
+   }
+   if(c.includes('verb')){
+     const v=pick(verbs);
+     let wrong=shuffle(verbs.filter(x=>x.form!==v.form).map(x=>x.form)).slice(0,2);
+     return {q:v.s,ans:v.form,options:shuffle([v.form,...wrong]),ex:`„${v.form}“ ist hier die passende Form von „${v.inf}“.`};
+   }
+   if(c.includes('adjektiv')){
+     const a=pick(adjs);
+     let wrong=shuffle(adjs.filter(x=>x.opp!==a.opp).map(x=>x.opp)).slice(0,2);
+     return {q:`Was ist das Gegenteil von „${a.w}“?`,ans:a.opp,options:shuffle([a.opp,...wrong]),ex:`Das Gegenteil von „${a.w}“ ist „${a.opp}“.`};
+   }
+   const pools=[
+    ...nouns.map(x=>[x.w,'Nomen']),
+    ...verbs.map(x=>[x.inf,'Verb']),
+    ...adjs.map(x=>[x.w,'Adjektiv'])
+   ];
+   const x=pick(pools);
+   return {q:`Welche Wortart ist „${x[0]}“?`,ans:x[1],options:['Nomen','Verb','Adjektiv'],ex:`„${x[0]}“ ist ein ${x[1]}.`};
+ };
+ window.generateGermanWordTask=window.generateGermanLearningTask;
+})();
+</script>
+
+
+<script>
+(function(){
+ const pick=a=>a[Math.floor(Math.random()*a.length)];
+ const sh=a=>a.slice().sort(()=>Math.random()-.5);
+
+ const tasks={
+  nomen:[
+   {q:'Welcher Artikel passt zu „Schmetterling“?',a:'der',o:['der','die','das'],e:'Es heißt: der Schmetterling.'},
+   {q:'Wie lautet die Mehrzahl von „Buch“?',a:'Bücher',o:['Bücher','Buche','Buchs'],e:'Ein Buch – mehrere Bücher.'},
+   {q:'Wie lautet die Mehrzahl von „Haus“?',a:'Häuser',o:['Häuser','Hausen','Hause'],e:'Ein Haus – mehrere Häuser.'}
+  ],
+  verb:[
+   {q:'Welche Form passt? Gestern ___ ich im Park.',a:'spielte',o:['spielte','spiele','spielen'],e:'„Gestern“ zeigt Vergangenheit: ich spielte.'},
+   {q:'Was ist die Grundform von „lief“?',a:'laufen',o:['laufen','liefen','läuft'],e:'Die Grundform von „lief“ ist „laufen“.'},
+   {q:'Welche Form passt? Heute ___ sie ein Buch.',a:'liest',o:['liest','las','lesen'],e:'„Heute“: sie liest.'}
+  ],
+  adjektiv:[
+   {q:'Welche Steigerung ist richtig? groß – größer – ...',a:'am größten',o:['am größten','am größer','größeste'],e:'groß – größer – am größten.'},
+   {q:'Was ist das Gegenteil von „mutig“?',a:'ängstlich',o:['ängstlich','fröhlich','schnell'],e:'Das Gegenteil von mutig ist ängstlich.'},
+   {q:'Welche Steigerung ist richtig? schnell – ... – am schnellsten',a:'schneller',o:['schneller','schnellere','schnellsten'],e:'schnell – schneller – am schnellsten.'}
+  ],
+  faelle:[
+   {q:'Welcher Fall? „Der Hund schläft.“ – Der Hund',a:'Nominativ',o:['Nominativ','Akkusativ','Dativ'],e:'Wer schläft? Der Hund. Das Subjekt steht im Nominativ.'},
+   {q:'Welcher Fall? „Ich sehe den Hund.“ – den Hund',a:'Akkusativ',o:['Nominativ','Akkusativ','Dativ'],e:'Wen sehe ich? Den Hund. → Akkusativ.'},
+   {q:'Welcher Fall? „Ich gebe dem Kind den Ball.“ – dem Kind',a:'Dativ',o:['Nominativ','Akkusativ','Dativ'],e:'Wem gebe ich den Ball? Dem Kind. → Dativ.'}
+  ],
+  zeitformen:[
+   {q:'Welche Zeitform? „Ich spiele Fußball.“',a:'Präsens',o:['Präsens','Präteritum','Perfekt'],e:'„Ich spiele“ steht in der Gegenwart: Präsens.'},
+   {q:'Welche Zeitform? „Ich spielte Fußball.“',a:'Präteritum',o:['Präsens','Präteritum','Perfekt'],e:'„Ich spielte“ ist die einfache Vergangenheit: Präteritum.'},
+   {q:'Welche Zeitform? „Ich habe Fußball gespielt.“',a:'Perfekt',o:['Präsens','Präteritum','Perfekt'],e:'„habe gespielt“ ist Perfekt.'}
+  ],
+  satzglieder:[
+   {q:'Was ist das Subjekt? „Jasmine liest ein spannendes Buch.“',a:'Jasmine',o:['Jasmine','liest','ein spannendes Buch'],e:'Wer liest? Jasmine. → Subjekt.'},
+   {q:'Was ist das Prädikat? „Der Hund läuft schnell.“',a:'läuft',o:['Der Hund','läuft','schnell'],e:'Was tut der Hund? Er läuft. → Prädikat.'},
+   {q:'Was ist das Subjekt? „Die Kinder spielen im Garten.“',a:'Die Kinder',o:['Die Kinder','spielen','im Garten'],e:'Wer spielt? Die Kinder. → Subjekt.'}
+  ],
+  rechtschreibung:[
+   {q:'Welches Wort ist richtig geschrieben?',a:'Fahrrad',o:['Fahrrad','Farrad','Fahrad'],e:'Richtig ist „Fahrrad“ – mit „Fahr-“ und zwei r.'},
+   {q:'Welches Wort ist richtig geschrieben?',a:'plötzlich',o:['plötzlich','plözlich','plötzlig'],e:'Richtig ist „plötzlich“.'},
+   {q:'Welcher Satz ist richtig?',a:'Morgen gehen wir schwimmen.',o:['morgen gehen wir schwimmen.','Morgen gehen wir schwimmen.','Morgen gehen wir Schwimmen.'],e:'Am Satzanfang wird „Morgen“ großgeschrieben; „schwimmen“ ist hier ein Verb.'}
+  ]
+ };
+
+ window.generateGermanGrade4Task=function(topic){
+   let key=String(topic||'').toLowerCase()
+     .replace('fälle','faelle').replace('zeitformen','zeitformen')
+     .replace('satzglieder','satzglieder').replace('rechtschreibung','rechtschreibung');
+   if(key.includes('nomen')) key='nomen';
+   else if(key.includes('verb')) key='verb';
+   else if(key.includes('adjektiv')) key='adjektiv';
+   else if(key.includes('fall')||key.includes('faell')) key='faelle';
+   else if(key.includes('zeit')) key='zeitformen';
+   else if(key.includes('satz')) key='satzglieder';
+   else if(key.includes('recht')) key='rechtschreibung';
+   else {
+     const keys=Object.keys(tasks); key=pick(keys);
+   }
+   const t=pick(tasks[key]);
+   return {q:t.q,ans:t.a,options:sh(t.o),ex:t.e,grade:4,topic:key};
+ };
+
+ // Keep original category behavior, but upgrade those categories to grade-4 questions where appropriate.
+ window.generateGermanLearningTask=window.generateGermanGrade4Task;
+ window.generateGermanWordTask=window.generateGermanGrade4Task;
+})();
+</script>
+
+
+<section id="profileSetupPanel">
+  <h3>👨‍👩‍👧‍👦 Profile & Einstellungen</h3>
+  <p>Lege für jedes Kind ein eigenes Profil mit Name und Klasse an.</p>
+  <div class="profile-row">
+    <input id="newProfileName" type="text" placeholder="Name des Kindes">
+    <select id="newProfileClass">
+      <option value="1">1. Klasse</option>
+      <option value="2">2. Klasse</option>
+      <option value="3">3. Klasse</option>
+      <option value="4" selected>4. Klasse</option>
+      <option value="5">5. Klasse</option>
+      <option value="6">6. Klasse</option>
+    </select>
+    <button id="addProfileBtn" type="button">Profil anlegen</button>
+  </div>
+  <div id="profileList"></div>
+</section>
+
+
+<script>
+(function(){
+  const KEY='lernhelden_profiles_v1';
+  const ACTIVE='lernhelden_active_profile_v1';
+
+  function loadProfiles(){
+    try{
+      const x=JSON.parse(localStorage.getItem(KEY)||'[]');
+      if(Array.isArray(x) && x.length) return x;
+    }catch(e){}
+    return [];
+  }
+  function saveProfiles(p){ localStorage.setItem(KEY,JSON.stringify(p)); }
+  function activeId(){ return localStorage.getItem(ACTIVE)||''; }
+  function setActive(id){ localStorage.setItem(ACTIVE,id); render(); window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()})); }
+  function getActiveProfile(){
+    const p=loadProfiles();
+    return p.find(x=>x.id===activeId()) || p[0] || null;
+  }
+  window.getLernheldenActiveProfile=getActiveProfile;
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+
+  function render(){
+    const list=document.getElementById('profileList');
+    if(!list) return;
+    const p=loadProfiles();
+    if(!p.length){
+      list.innerHTML='<p style="opacity:.7">Noch kein Profil angelegt.</p>';
+      return;
+    }
+    const aid=activeId() || p[0].id;
+    if(!activeId()) localStorage.setItem(ACTIVE,aid);
+    list.innerHTML=p.map(x=>`
+      <div class="profile-card ${x.id===aid?'active':''}">
+        <div>
+          <strong>${esc(x.name)}</strong>
+          <div class="meta">${esc(x.classLevel)}. Klasse</div>
+        </div>
+        <div class="profile-actions">
+          <button type="button" data-act="select" data-id="${x.id}">${x.id===aid?'Aktiv':'Auswählen'}</button>
+          <button type="button" data-act="edit" data-id="${x.id}">Bearbeiten</button>
+          <button type="button" data-act="delete" data-id="${x.id}">Löschen</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function add(){
+    const name=document.getElementById('newProfileName').value.trim();
+    const cls=document.getElementById('newProfileClass').value;
+    if(!name){ alert('Bitte einen Namen eingeben.'); return; }
+    const p=loadProfiles();
+    const obj={id:'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name,classLevel:Number(cls)};
+    p.push(obj); saveProfiles(p);
+    if(!activeId()) localStorage.setItem(ACTIVE,obj.id);
+    document.getElementById('newProfileName').value='';
+    render();
+  }
+
+  function edit(id){
+    const p=loadProfiles(), x=p.find(v=>v.id===id); if(!x) return;
+    const name=prompt('Name des Kindes:',x.name); if(name===null) return;
+    const cls=prompt('Klasse (1-6):',x.classLevel); if(cls===null) return;
+    const n=Number(cls);
+    if(!name.trim() || !Number.isInteger(n) || n<1 || n>6){ alert('Bitte gültigen Namen und Klasse 1-6 eingeben.'); return; }
+    x.name=name.trim(); x.classLevel=n; saveProfiles(p); render();
+    window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()}));
+  }
+
+  function del(id){
+    const p=loadProfiles(), x=p.find(v=>v.id===id); if(!x) return;
+    if(!confirm(`Profil „${x.name}“ wirklich löschen?`)) return;
+    const np=p.filter(v=>v.id!==id); saveProfiles(np);
+    if(activeId()===id){
+      if(np.length) localStorage.setItem(ACTIVE,np[0].id);
+      else localStorage.removeItem(ACTIVE);
+    }
+    render();
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const btn=document.getElementById('addProfileBtn');
+    if(btn) btn.addEventListener('click',add);
+    const list=document.getElementById('profileList');
+    if(list) list.addEventListener('click',e=>{
+      const b=e.target.closest('button[data-act]'); if(!b) return;
+      const id=b.dataset.id, act=b.dataset.act;
+      if(act==='select') setActive(id);
+      if(act==='edit') edit(id);
+      if(act==='delete') del(id);
+    });
+    render();
+  });
+})();
+</script>
+
+
+<script>
+window.getLernheldenGrade=function(){
+  try{
+    const p=window.getLernheldenActiveProfile && window.getLernheldenActiveProfile();
+    return p && p.classLevel ? Number(p.classLevel) : 4;
+  }catch(e){ return 4; }
+};
+</script>
+
+
+<section id="cloudAccountBox">
+  <h3>☁️ Familienkonto & Synchronisierung</h3>
+  <div id="cloudSignedOut">
+    <p>Mit einem Familienkonto werden Kinderprofile geräteübergreifend gespeichert.</p>
+    <input id="cloudEmail" type="email" placeholder="E-Mail der Eltern">
+    <input id="cloudPassword" type="password" placeholder="Passwort (mindestens 6 Zeichen)">
+    <button id="cloudLoginBtn" type="button">Anmelden</button>
+    <button id="cloudRegisterBtn" type="button">Neues Familienkonto</button><button id="cloudResetBtn" type="button">Passwort vergessen</button>
+  </div>
+  <div id="cloudSignedIn" style="display:none">
+    <p>Angemeldet als <strong id="cloudUserEmail"></strong></p>
+    <button id="cloudSyncBtn" type="button">Jetzt synchronisieren</button>
+    <button id="cloudLogoutBtn" type="button">Abmelden</button>
+  </div>
+  <div id="cloudStatus" class="cloud-warn">Supabase noch nicht eingerichtet.</div>
+</section>
+
+
+<script>
+(function(){
+ const CFG=window.LERNHELDEN_SUPABASE||{};
+ let sb=null, session=null;
+ const status=(txt,cls='cloud-warn')=>{
+   const e=document.getElementById('cloudStatus'); if(e){e.textContent=txt;e.className=cls;}
+ };
+ const configured=()=>CFG.url && CFG.publishableKey && !CFG.url.includes('DEIN-') && !CFG.publishableKey.includes('DEIN-');
+
+ function getLocalProfiles(){
+   try{return JSON.parse(localStorage.getItem('lernhelden_profiles_v1')||'[]')||[];}catch(e){return []}
+ }
+ function saveLocalProfiles(p){localStorage.setItem('lernhelden_profiles_v1',JSON.stringify(p||[]));}
+
+ async function ensureFamily(){
+   if(!session) return null;
+   const uid=session.user.id;
+   let {data,error}=await sb.from('families').select('*').eq('owner_id',uid).maybeSingle();
+   if(error) throw error;
+   if(!data){
+     const ins=await sb.from('families').insert({owner_id:uid,name:'Meine Familie'}).select().single();
+     if(ins.error) throw ins.error;
+     data=ins.data;
+   }
+   return data;
+ }
+
+ async function pullProfiles(){
+   const fam=await ensureFamily(); if(!fam) return;
+   const {data,error}=await sb.from('children').select('*').eq('family_id',fam.id).order('created_at');
+   if(error) throw error;
+   const mapped=(data||[]).map(x=>({id:x.id,name:x.name,classLevel:Number(x.class_level)}));
+   saveLocalProfiles(mapped);
+   if(mapped.length && !mapped.some(x=>x.id===localStorage.getItem('lernhelden_active_profile_v1'))){
+     localStorage.setItem('lernhelden_active_profile_v1',mapped[0].id);
+   }
+   window.dispatchEvent(new Event('storage'));
+ }
+
+ async function pushProfiles(){
+   const fam=await ensureFamily(); if(!fam) return;
+   const local=getLocalProfiles();
+   for(const x of local){
+     // Old local IDs are strings; cloud IDs are UUIDs. Match cloud rows by exact UUID when possible,
+     // otherwise by name+class in this family, then insert.
+     let cloud=null;
+     if(/^[0-9a-f-]{36}$/i.test(x.id||'')){
+       const q=await sb.from('children').select('*').eq('family_id',fam.id).eq('id',x.id).maybeSingle();
+       if(!q.error) cloud=q.data;
+     }
+     if(!cloud){
+       const q=await sb.from('children').select('*').eq('family_id',fam.id).eq('name',x.name).eq('class_level',Number(x.classLevel)).maybeSingle();
+       if(!q.error) cloud=q.data;
+     }
+     if(!cloud){
+       const ins=await sb.from('children').insert({family_id:fam.id,name:x.name,class_level:Number(x.classLevel)}).select().single();
+       if(ins.error) throw ins.error;
+     }else{
+       const up=await sb.from('children').update({name:x.name,class_level:Number(x.classLevel)}).eq('id',cloud.id);
+       if(up.error) throw up.error;
+     }
+   }
+ }
+
+ async function fullSync(){
+   if(!session){status('Bitte zuerst anmelden.','cloud-warn');return;}
+   try{
+     status('Synchronisierung läuft …','cloud-warn');
+     await pushProfiles();
+     await pullProfiles();
+     status('Synchronisiert ✓','cloud-ok');
+     location.reload();
+   }catch(e){console.error(e);status('Sync-Fehler: '+e.message,'cloud-error');}
+ }
+
+ async function refreshUI(){
+   const out=document.getElementById('cloudSignedOut'), inn=document.getElementById('cloudSignedIn');
+   if(!configured()){
+     status('Noch nicht verbunden: config.js ausfüllen.','cloud-warn'); return;
+   }
+   const r=await sb.auth.getSession(); session=r.data.session;
+   if(session){
+     out.style.display='none'; inn.style.display='block';
+     document.getElementById('cloudUserEmail').textContent=session.user.email||'Elternkonto';
+     status('Cloud-Sync aktiv.','cloud-ok');
+     try{await pullProfiles();}catch(e){status('Cloud verbunden, Profilabruf fehlgeschlagen: '+e.message,'cloud-error');}
+   }else{
+     out.style.display='block'; inn.style.display='none';
+     status('Nicht angemeldet.','cloud-warn');
+   }
+ }
+
+ document.addEventListener('DOMContentLoaded',async()=>{
+   if(!configured()) return refreshUI();
+   sb=window.supabase.createClient(CFG.url,CFG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+   document.getElementById('cloudLoginBtn').onclick=async()=>{
+     const email=document.getElementById('cloudEmail').value.trim(), password=document.getElementById('cloudPassword').value;
+     status('Anmeldung …');
+     const {error}=await sb.auth.signInWithPassword({email,password});
+     if(error) return status(error.message,'cloud-error');
+     await refreshUI(); await fullSync();
+   };
+   document.getElementById('cloudRegisterBtn').onclick=async()=>{
+     const email=document.getElementById('cloudEmail').value.trim(), password=document.getElementById('cloudPassword').value;
+     if(!email||password.length<6) return status('Bitte gültige E-Mail und mindestens 6 Zeichen Passwort eingeben.','cloud-error');
+     status('Konto wird erstellt …');
+     const {data,error}=await sb.auth.signUp({email,password});
+     if(error) return status(error.message,'cloud-error');
+     if(!data.session){
+       status('Konto erstellt. Bitte E-Mail bestätigen und danach anmelden.','cloud-ok');
+     }else{
+       await refreshUI(); await fullSync();
+     }
+   };
+   document.getElementById('cloudResetBtn').onclick=async()=>{
+     const email=document.getElementById('cloudEmail').value.trim();
+     if(!email) return status('Bitte zuerst deine E-Mail eingeben.','cloud-error');
+     const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+     if(error) return status(error.message,'cloud-error');
+     status('E-Mail zum Zurücksetzen wurde versendet.','cloud-ok');
+   };
+   document.getElementById('cloudLogoutBtn').onclick=async()=>{await sb.auth.signOut();session=null;await refreshUI();};
+   document.getElementById('cloudSyncBtn').onclick=fullSync;
+
+   sb.auth.onAuthStateChange((_event,s)=>{session=s;setTimeout(refreshUI,0);});
+   await refreshUI();
+ });
+})();
+</script>
+
+
+<style>
+#parentPinBox{max-width:720px;margin:18px auto;padding:16px;border:1px solid #ddd;border-radius:16px;background:#fff}
+#parentPinBox input{padding:9px;border:1px solid #ccc;border-radius:9px}
+</style>
+<section id="parentPinBox">
+ <h3>🔒 Elternschutz</h3>
+ <p id="pinInfo">Schütze Änderungen an Profilen und Einstellungen mit einer 4-stelligen PIN.</p>
+ <input id="parentPinInput" inputmode="numeric" maxlength="4" placeholder="4-stellige PIN">
+ <button id="parentPinSave" type="button">PIN speichern/ändern</button>
+ <button id="parentUnlock" type="button">Elternbereich entsperren</button>
+ <div id="pinStatus"></div>
+</section>
+<script>
+(function(){
+ const PINKEY='lernhelden_parent_pin_v1', UNLOCK='lernhelden_parent_unlocked';
+ const stat=t=>{const e=document.getElementById('pinStatus');if(e)e.textContent=t};
+ document.addEventListener('DOMContentLoaded',()=>{
+  const input=document.getElementById('parentPinInput');
+  document.getElementById('parentPinSave').onclick=()=>{
+    const v=input.value.trim();
+    if(!/^\d{4}$/.test(v)) return stat('Bitte genau 4 Ziffern eingeben.');
+    localStorage.setItem(PINKEY,v);sessionStorage.setItem(UNLOCK,'1');stat('Eltern-PIN gespeichert ✓');
+  };
+  document.getElementById('parentUnlock').onclick=()=>{
+    const saved=localStorage.getItem(PINKEY);
+    if(!saved){stat('Noch keine PIN gesetzt.');return;}
+    if(input.value===saved){sessionStorage.setItem(UNLOCK,'1');stat('Elternbereich entsperrt ✓');}
+    else stat('PIN ist nicht korrekt.');
+  };
+ });
+ window.lernheldenParentUnlocked=()=>!localStorage.getItem(PINKEY)||sessionStorage.getItem(UNLOCK)==='1';
+})();
+</script>
+<script>
+/* v7.1 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+window.LernheldenCloud = window.LernheldenCloud || {};
+window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
+ try{
+  const cfg=window.LERNHELDEN_SUPABASE||{};
+  if(!cfg.url||!cfg.publishableKey||!window.supabase) return;
+  const sb=window.supabase.createClient(cfg.url,cfg.publishableKey);
+  const ses=(await sb.auth.getSession()).data.session;if(!ses)return;
+  const profile=window.getLernheldenActiveProfile&&window.getLernheldenActiveProfile();if(!profile||!/^[0-9a-f-]{36}$/i.test(profile.id))return;
+  await sb.from('attempts').insert({child_id:profile.id,subject,topic,question,correct:!!correct,answer:String(answer??''),correct_answer:String(correctAnswer??'')});
+ }catch(e){console.warn('Attempt sync',e)}
+};
+window.LernheldenCloud.recordLearningSession = async function(activeSeconds){
+ try{
+  const cfg=window.LERNHELDEN_SUPABASE||{};
+  if(!cfg.url||!cfg.publishableKey||!window.supabase) return;
+  const sb=window.supabase.createClient(cfg.url,cfg.publishableKey);
+  const ses=(await sb.auth.getSession()).data.session;if(!ses)return;
+  const profile=window.getLernheldenActiveProfile&&window.getLernheldenActiveProfile();if(!profile||!/^[0-9a-f-]{36}$/i.test(profile.id))return;
+  await sb.from('learning_sessions').insert({child_id:profile.id,active_seconds:Math.max(0,Math.round(activeSeconds||0)),ended_at:new Date().toISOString()});
+ }catch(e){console.warn('Session sync',e)}
+};
 </script>
 
 </body></html>

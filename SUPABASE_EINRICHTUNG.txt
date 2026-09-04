@@ -1,0 +1,20 @@
+LERNHELDEN v7 – SUPABASE EINRICHTUNG
+
+1. Auf https://supabase.com ein Konto anlegen/anmelden.
+2. New project erstellen.
+3. Projektname z.B. lernhelden, Region möglichst Europa wählen.
+4. Nach Erstellung links SQL Editor öffnen.
+5. Inhalt von supabase_setup.sql komplett einfügen und Run ausführen.
+6. Oben im Supabase-Projekt Connect öffnen oder Settings > API Keys.
+7. Project URL kopieren.
+8. PUBLISHABLE KEY kopieren (beginnt typischerweise mit sb_publishable_...).
+9. config.js öffnen und beide Platzhalter ersetzen.
+10. NIEMALS den Secret Key / service_role Key in config.js oder GitHub eintragen.
+11. Alle Dateien ins GitHub-Pages-Repository hochladen und committen.
+12. App öffnen. Unter Familienkonto ein Elternkonto registrieren.
+13. Falls E-Mail-Bestätigung aktiv ist, Bestätigungslink anklicken und danach anmelden.
+14. Kinderprofile anlegen und 'Jetzt synchronisieren' drücken.
+
+Hinweis:
+Die Profile werden in v7 cloudfähig gemacht. learning_sessions und attempts sind in der Datenbank bereits vorbereitet,
+damit Lernzeit und Ergebnisse im nächsten Ausbauschritt ebenfalls vollständig geräteübergreifend synchronisiert werden können.
