@@ -99,6 +99,21 @@
  background:#6c63ff;color:#fff;font-weight:800;
 }
 
+
+.v82nextbtn{
+  margin-top:14px;
+  padding:14px 22px;
+  border:none;
+  border-radius:14px;
+  background:#1976d2;
+  color:#fff;
+  font-size:1.12rem;
+  font-weight:700;
+  box-shadow:0 4px 12px rgba(25,118,210,.28);
+  cursor:pointer;
+}
+.v82nextbtn:active{transform:scale(.98)}
+
 </style>
 <style>
 #profileSetupPanel{
@@ -1196,7 +1211,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.3 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.5 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1446,15 +1461,15 @@ window.K4=(function(){
 <input id="v82input" style="display:none;width:100%;box-sizing:border-box" inputmode="decimal">
 <button id="v82check" style="display:none;margin-top:8px" onclick="V82.checkInput()">Prüfen</button>
 <div id="v82fb" style="display:none;margin-top:12px"></div>
-<button id="v82next" style="display:none;margin-top:10px" onclick="V82.next()">Nächste Aufgabe</button>
+<button id="v82next" class="v82nextbtn" style="display:none" onclick="V82.next()">Nächste Aufgabe</button>
 </div></div></div>
 <script>
 window.V82=(()=>{
 const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,P=a=>a[Math.floor(Math.random()*a.length)],S=a=>a.slice().sort(()=>Math.random()-.5);
-let area='',topic='',cur;
+let area='',topic='',cur,autoTimer=null,answered=false;
 const mainMath={times:'× Multiplikation',divide:'÷ Division',plus:'+ Addition',minus:'− Subtraktion',text:'📝 Textaufgaben',grade4:'🎒 Mathe 4. Klasse'};
 const grade4={written:'Schriftlich rechnen',numbers:'Zahlen bis 1.000',semi:'Halbschriftlich rechnen',sizes:'Größen',time:'Zeit',charts:'Diagramme',patterns:'Muster & Geometrie',stories:'Sachaufgaben 4. Klasse',mixed:'🔀 Alles gemischt'};
-const de={old:'Bisherige Deutschübungen',write:'✍️ Richtig schreiben'};
+const de={old:'📚 Bisherige Deutschübungen',write:'✍️ Richtig schreiben'};
 const writing={memory:'Merkwörter',blocks:'Wortbausteine',extend:'Verlängern & Ableiten',case:'Groß / Klein',punct:'Satzzeichen',vowels:'Kurze & lange Vokale',grammar:'Grammatik',tenses:'Zeitformen',mixedde:'🔀 Gemischt'};
 function menu(obj){document.getElementById('v82menu').innerHTML=Object.entries(obj).map(([k,v])=>`<button class="v82btn" onclick="V82.pick('${k}')"><b>${v}</b></button>`).join('');document.getElementById('v82game').style.display='none'}
 function open(a){
@@ -1493,14 +1508,48 @@ function g4(t=topic){
  let a=R(100,350),b=R(80,300);return inp('Sachaufgabe 4. Klasse',`Am Montag kommen ${a} Besucher, am Dienstag ${b}. Wie viele insgesamt?`,a+b,'Gesucht ist die Gesamtzahl: addieren.')
 }
 const deTasks={
- memory:()=>mc('Merkwörter','Was ist richtig?','nämlich',['nämlich','nemlich','nähmlich'],'„nämlich“ ist ein Merkwort.'),
- blocks:()=>mc('Wortbausteine','freund + ___ = freundlich','lich',['lich','heit','ung'],'Der Wortbaustein -lich bildet hier ein Adjektiv.'),
- extend:()=>mc('Verlängern','Wie verlängerst du „Tag“?','Tage',['Tage','Take','Tags'],'Tag → Tage, dadurch hört man g.'),
- case:()=>mc('Groß / Klein','Was ist richtig?','Das Spielen macht Spaß.',['Das Spielen macht Spaß.','Das spielen macht Spaß.'],'Nach „das“ wird Spielen als Nomen gebraucht.'),
- punct:()=>mc('Satzzeichen','Kommst du morgen___','?',['?','.','!'],'Eine Frage endet mit ?.'),
- vowels:()=>mc('Vokale','Welches Wort hat einen kurzen Vokal?','Mitte',['Mitte','Rose','Schule'],'Das i in Mitte ist kurz.'),
- grammar:()=>mc('Grammatik','Welche Wortart ist „fröhlich“?','Adjektiv',['Nomen','Verb','Adjektiv'],'Es beschreibt eine Eigenschaft.'),
- tenses:()=>P([()=>mc('Zeitformen','„Ich spiele.“ ist …','Präsens',['Präsens','Präteritum','Perfekt'],'Präsens = Gegenwart.'),()=>mc('Zeitformen','„Ich spielte.“ ist …','Präteritum',['Präsens','Präteritum','Perfekt'],'spielte steht im Präteritum.'),()=>mc('Zeitformen','„Ich habe gespielt.“ ist …','Perfekt',['Präsens','Präteritum','Perfekt'],'habe + gespielt = Perfekt.')])()
+ memory:()=>P([
+  ()=>mc('Merkwörter','Welches Wort ist richtig geschrieben?','nämlich',['nämlich','nemlich','nähmlich'],'„nämlich“ ist ein Merkwort.'),
+  ()=>mc('Merkwörter','Welches Wort ist richtig geschrieben?','plötzlich',['plötzlich','plözlich','plötzlichh'],'„plötzlich“ schreibt man mit tz.'),
+  ()=>mc('Merkwörter','Welches Wort ist richtig geschrieben?','vielleicht',['vielleicht','vileicht','vielleich'],'„vielleicht“ ist ein Merkwort.')
+ ])(),
+ blocks:()=>P([
+  ()=>mc('Wortbausteine','freund + ___ = freundlich','lich',['lich','heit','ung'],'Der Wortbaustein -lich bildet ein Adjektiv.'),
+  ()=>mc('Wortbausteine','krank + ___ = Krankheit','heit',['heit','lich','ung'],'krank + heit = Krankheit.'),
+  ()=>mc('Wortbausteine','hoff + ___ = Hoffnung','nung',['nung','heit','lich'],'hoff + nung = Hoffnung.')
+ ])(),
+ extend:()=>P([
+  ()=>mc('Verlängern','Wie verlängerst du „Tag“?','Tage',['Tage','Take','Tags'],'Tag → Tage. So hört man das g.'),
+  ()=>mc('Verlängern','Wie verlängerst du „Hund“?','Hunde',['Hunde','Hunte','Hunds'],'Hund → Hunde. So hörst du das d.'),
+  ()=>mc('Ableiten','Welches Grundwort hilft bei „Bäume“?','Baum',['Baum','Bahn','Biene'],'Bäume lässt sich von Baum ableiten.')
+ ])(),
+ case:()=>P([
+  ()=>mc('Groß / Klein','Was ist richtig?','Das Spielen macht Spaß.',['Das Spielen macht Spaß.','Das spielen macht Spaß.'],'Nach „das“ wird Spielen als Nomen gebraucht.'),
+  ()=>mc('Groß / Klein','Was ist richtig?','Beim Lesen lerne ich viel.',['Beim Lesen lerne ich viel.','Beim lesen lerne ich viel.'],'Nach „beim“ wird Lesen großgeschrieben.'),
+  ()=>mc('Groß / Klein','Was ist richtig?','Wir gehen heute schwimmen.',['Wir gehen heute schwimmen.','Wir gehen heute Schwimmen.'],'Hier ist „schwimmen“ ein Verb und wird kleingeschrieben.')
+ ])(),
+ punct:()=>P([
+  ()=>mc('Satzzeichen','Kommst du morgen___','?',['?','.','!'],'Eine Frage endet mit ?.'),
+  ()=>mc('Satzzeichen','Pass auf___','!',['!','?','.'],'Ein Ausruf oder eine Warnung endet oft mit !.'),
+  ()=>mc('Satzzeichen','Heute scheint die Sonne___','.',['.','?','!'],'Ein Aussagesatz endet mit einem Punkt.')
+ ])(),
+ vowels:()=>P([
+  ()=>mc('Vokale','Welches Wort hat einen kurzen Vokal?','Mitte',['Mitte','Rose','Schule'],'Das i in Mitte ist kurz.'),
+  ()=>mc('Vokale','Welches Wort hat einen langen Vokal?','Ofen',['Ofen','Kamm','Mitte'],'Das O in Ofen wird lang gesprochen.'),
+  ()=>mc('Vokale','Welches Wort hat einen kurzen Vokal?','Kanne',['Kanne','Hose','Liebe'],'Das a in Kanne wird kurz gesprochen.')
+ ])(),
+ grammar:()=>P([
+  ()=>mc('Grammatik','Welche Wortart ist „fröhlich“?','Adjektiv',['Nomen','Verb','Adjektiv'],'Es beschreibt eine Eigenschaft.'),
+  ()=>mc('Grammatik','Welche Wortart ist „laufen“?','Verb',['Nomen','Verb','Adjektiv'],'„laufen“ bezeichnet eine Tätigkeit.'),
+  ()=>mc('Grammatik','Welche Wortart ist „Schule“?','Nomen',['Nomen','Verb','Adjektiv'],'„Schule“ ist ein Nomen und wird großgeschrieben.')
+ ])(),
+ tenses:()=>P([
+  ()=>mc('Zeitformen','„Ich spiele.“ ist …','Präsens',['Präsens','Präteritum','Perfekt'],'Präsens = Gegenwart.'),
+  ()=>mc('Zeitformen','„Ich spielte.“ ist …','Präteritum',['Präsens','Präteritum','Perfekt'],'spielte steht im Präteritum.'),
+  ()=>mc('Zeitformen','„Ich habe gespielt.“ ist …','Perfekt',['Präsens','Präteritum','Perfekt'],'habe + gespielt = Perfekt.'),
+  ()=>mc('Zeitformen','Setze „gehen“ ins Präteritum: „Wir ___ nach Hause.“','gingen',['gingen','gehen','sind gegangen'],'Präteritum von „gehen“: wir gingen.'),
+  ()=>mc('Zeitformen','Setze „lernen“ ins Perfekt: „Ich ___ viel ___.“','habe gelernt',['habe gelernt','lernte','lerne'],'Perfekt: haben/sein + Partizip II.')
+ ])()
 };
 function task(){
  if(area==='math')return basicMath(); if(area==='g4')return g4();
@@ -1515,10 +1564,24 @@ function task(){
  }
  return mc('Deutsch','Welche Wortart ist „laufen“?','Verb',['Nomen','Verb','Adjektiv'],'„laufen“ bezeichnet eine Tätigkeit.')
 }
-function render(){document.getElementById('v82game').style.display='block';document.getElementById('v82topic').textContent=cur.t;document.getElementById('v82q').textContent=cur.q;let A=document.getElementById('v82ans'),I=document.getElementById('v82input'),C=document.getElementById('v82check'),F=document.getElementById('v82fb'),N=document.getElementById('v82next');A.innerHTML='';F.style.display=N.style.display='none';I.value='';if(cur.o){I.style.display=C.style.display='none';cur.o.forEach(x=>{let b=document.createElement('button');b.textContent=x;b.onclick=()=>check(x);A.appendChild(b)})}else{I.style.display='block';C.style.display='inline-block'}}
+function render(){answered=false;if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}document.getElementById('v82game').style.display='block';document.getElementById('v82topic').textContent=cur.t;document.getElementById('v82q').textContent=cur.q;let A=document.getElementById('v82ans'),I=document.getElementById('v82input'),C=document.getElementById('v82check'),F=document.getElementById('v82fb'),N=document.getElementById('v82next');A.innerHTML='';F.style.display=N.style.display='none';I.value='';if(cur.o){I.style.display=C.style.display='none';cur.o.forEach(x=>{let b=document.createElement('button');b.textContent=x;b.onclick=()=>check(x);A.appendChild(b)})}else{I.style.display='block';C.style.display='inline-block'}}
 function norm(x){return String(x).trim().toLowerCase().replace(',','.').replace(/\s+/g,' ')}
-function check(v){let ok=norm(v)===norm(cur.a),F=document.getElementById('v82fb');F.style.display='block';F.innerHTML=ok?'⭐ <b>Richtig!</b>':`💡 <b>Noch nicht.</b> Richtig: <b>${cur.a}</b><br>${cur.e}`;document.getElementById('v82next').style.display='inline-block';if(ok&&typeof speakBravo==='function')try{speakBravo()}catch(e){}}
-return{open,pick,next(){cur=task();render()},checkInput(){check(document.getElementById('v82input').value)},close(){document.getElementById('v82').style.display='none'}}
+function check(v){
+ if(answered)return;
+ answered=true;
+ let ok=norm(v)===norm(cur.a),F=document.getElementById('v82fb'),N=document.getElementById('v82next');
+ F.style.display='block';
+ if(ok){
+   F.innerHTML='⭐ <b>Richtig!</b><br><span style="opacity:.75">Nächste Aufgabe in 2 Sekunden …</span>';
+   N.style.display='none';
+   if(typeof speakBravo==='function')try{speakBravo()}catch(e){}
+   autoTimer=setTimeout(()=>{autoTimer=null;V82.next()},2000);
+ }else{
+   F.innerHTML=`💡 <b>Noch nicht.</b> Richtig: <b>${cur.a}</b><br>${cur.e}`;
+   N.style.display='inline-block';
+ }
+}
+return{open,pick,next(){if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}cur=task();render()},checkInput(){check(document.getElementById('v82input').value)},close(){document.getElementById('v82').style.display='none'}}
 })();
 
 </script>
