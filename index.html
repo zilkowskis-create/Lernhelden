@@ -314,7 +314,7 @@ body.parent-open #parentPinBox{display:block}
 <nav class="bottom">
 <button class="nav active" data-s="home" onclick="show('home')"><span>🏠</span>Start</button>
 <button class="nav" data-s="math" onclick="show('math')"><span>🏆</span>Mathe</button>
-<button class="nav" data-s="language" onclick="V82.open('lang')"><span>📚</span>Sprachen</button>
+<button class="nav" data-s="language" onclick="openLanguageChooser()"><span>📚</span>Sprachen</button>
 <button class="nav" data-s="progressScreen" onclick="show('progressScreen')"><span>⭐</span>Erfolge</button>
 </nav>
 
@@ -482,21 +482,39 @@ const EN = {
  adjectives:['fast','small','happy','loud','beautiful','warm','cold','brave','quiet','strong','friendly','bright','dark','soft','big']
 };
 
+
+function openLanguageChooser(){
+  show('language');
+  langTitle.textContent='📚 Sprachen';
+  langIntro.textContent='Wähle Deutsch oder Englisch.';
+  langTopics.innerHTML='';
+  langGame.style.display='none';
+  lgFeedback.textContent='';
+  lgFeedback.className='feedback';
+  lgNext.style.display='none';
+
+  const de=document.createElement('button');
+  de.className='mode';
+  de.textContent='🇩🇪 Deutsch';
+  de.onclick=()=>openLang('de');
+
+  const en=document.createElement('button');
+  en.className='mode';
+  en.textContent='🇬🇧 Englisch';
+  en.onclick=()=>openLang('en');
+
+  langTopics.appendChild(de);
+  langTopics.appendChild(en);
+}
+
 function openLang(l){lang=l;langTopic='mixed';show('language');langTitle.textContent=l==='de'?'🇩🇪 Deutsch':'🇬🇧 Englisch';langIntro.textContent=l==='de'?'Nomen, Verben und Adjektive sicher erkennen.':'Nouns, verbs, adjectives and vocabulary practice.';renderLangTopics()}
 function renderLangTopics(){
  const topics=lang==='de'?[['mixed','🔀 Gemischt'],['nouns','🔵 Nomen'],['verbs','🔴 Verben'],['adjectives','🟢 Adjektive']]:[['mixed','🔀 Mixed'],['vocab','💬 Vokabeln'],['nouns','🔵 Nouns'],['verbs','🔴 Verbs'],['adjectives','🟢 Adjectives']];
  langTopics.innerHTML='';
  topics.forEach((x,i)=>{let b=document.createElement('button');b.className='mode'+(i===0?' selected':'');b.textContent=x[1];b.onclick=()=>{document.querySelectorAll('#langTopics .mode').forEach(z=>z.classList.remove('selected'));b.classList.add('selected');langTopic=x[0]};langTopics.appendChild(b)});
  if(lang==='de'){
-   let sep=document.createElement('div');
-   sep.style.flexBasis='100%';
-   sep.innerHTML='<div style="margin-top:10px;font-weight:800;color:#4d5870">Zusätzlich</div>';
-   langTopics.appendChild(sep);
    let rs=document.createElement('button');
    rs.className='mode';
-   rs.style.background='#eef5ff';
-   rs.style.borderColor='#9fc4ff';
-   rs.style.color='#1557a8';
    rs.textContent='✍️ Richtig schreiben';
    rs.onclick=()=>V82.open('write');
    langTopics.appendChild(rs);
@@ -1236,7 +1254,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v9.1 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v9.2 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1508,7 +1526,7 @@ function open(a){
  area=a;
  document.getElementById('v82').style.display='block';
  if(a==='g4menu'){area='g4';title('🎒 Mathe 4. Klasse');menu(grade4);return}
- if(a==='lang'){title('🌍 Sprachen');menu({de:'🇩🇪 Deutsch',en:'🇬🇧 Englisch'});return}
+ if(a==='lang'){close();openLanguageChooser();return}
  if(a==='write'){area='write';title('✍️ Richtig schreiben');menu(writing);return}
  if(a==='math'){title('➗ Mathe');menu(mainMath);return}
 }
