@@ -631,7 +631,7 @@ renderKids();renderTables();refresh();
         const msg=new SpeechSynthesisUtterance('Bravo!');
         msg.lang='de-DE';
         msg.rate=1.08;
-        msg.pitch=1.45;
+        msg.pitch=1.62;
         msg.volume=0.48;
 
         const voices=window.speechSynthesis.getVoices();
@@ -1232,7 +1232,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.6 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.8 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
