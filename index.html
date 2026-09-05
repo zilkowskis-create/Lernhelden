@@ -132,8 +132,16 @@
 .cloud-ok{color:#267a36}.cloud-warn{color:#9a6500}.cloud-error{color:#a12d2d}
 </style>
 
+
+<style>
+#profileSetupPanel,#cloudAccountBox,#parentPinBox{display:none}
+body.parent-open #profileSetupPanel,
+body.parent-open #cloudAccountBox,
+body.parent-open #parentPinBox{display:block}
+</style>
+
 </head>
-<body>
+<body><button id="klasse4Entry" onclick="document.body.classList.add('k4-open');document.getElementById('klasse4Hub').scrollIntoView({behavior:'smooth'})" style="position:fixed;right:14px;bottom:14px;z-index:999;padding:11px 15px;border-radius:999px;border:0;box-shadow:0 4px 18px #0003">🎒 4. Klasse</button>
 <div class="app">
 <div class="top"><div class="logo">Lern<i>helden</i> <span>✨</span></div><button class="pill" style="border:0" onclick="show('parent')">👨‍👩‍👧 Eltern</button></div>
 
@@ -250,16 +258,9 @@
  <div class="hero"><h1>Elternbereich 👨‍👩‍👧‍👦</h1>
 <div class="parent-tools" id="parentControlsPanel">
   <h3>👨‍👩‍👧‍👦 Elternbereich</h3>
-  <div class="parent-time-grid">
-    <div class="parent-time-card">
-      <span>Jasmine heute</span>
-      <strong id="jasmineMinutes">0 Min.</strong>
+  <div class="parent-time-grid" id="dynamicParentTimes">
+      <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
-    <div class="parent-time-card">
-      <span>Elias heute</span>
-      <strong id="eliasMinutes">0 Min.</strong>
-    </div>
-  </div>
 
   <div class="setting-row">
     <div class="setting-copy">
@@ -283,7 +284,7 @@
     </label>
   </div>
 </div>
-<p>Alles bleibt lokal auf diesem Gerät. Keine Registrierung, kein Server und keine laufenden Kosten.</p></div>
+<p>Mit Familienkonto werden Profile und Lernfortschritt sicher über Supabase synchronisiert. Ohne Anmeldung bleiben Daten lokal auf diesem Gerät.</p></div>
  <div class="card"><h3 id="parentName">Lernstand</h3><div class="grid3">
   <div class="stat"><b id="parTotal">0</b><span class="muted">Aufgaben</span></div>
   <div class="stat"><b id="parRate">0%</b><span class="muted">richtig</span></div>
@@ -302,16 +303,49 @@
 </nav>
 
 <script>
-const defaultKids=[{id:'jasmine',name:'Jasmine',grade:'4. Klasse',avatar:'👧'},{id:'elias',name:'Elias',grade:'Grundschule',avatar:'👦'}];
-let currentKid=localStorage.getItem('lhKid')||'jasmine', op='*', range=20, mode='practice', difficulty='easy', selectedTables=[1], all=false;
+function loadAppProfiles(){
+ try{
+  const p=JSON.parse(localStorage.getItem('lernhelden_profiles_v1')||'[]');
+  if(Array.isArray(p)) return p.map(x=>({
+   id:String(x.id),
+   name:String(x.name||'Kind'),
+   grade:(Number(x.classLevel)||4)+'. Klasse',
+   classLevel:Number(x.classLevel)||4,
+   avatar:'🧒'
+  }));
+ }catch(e){}
+ return [];
+}
+let defaultKids=loadAppProfiles();
+let currentKid=localStorage.getItem('lernhelden_active_profile_v1')||localStorage.getItem('lhKid')||(defaultKids[0]&&defaultKids[0].id)||'', op='*', range=20, mode='practice', difficulty='easy', selectedTables=[1], all=false;
 let current=null, answered=false, gameCorrect=0, gameTotal=0, startedAt=0, timer=null;
 
 function key(){return 'lernhelden_'+currentKid}
 function data(){return JSON.parse(localStorage.getItem(key())||'{"total":0,"correct":0,"stars":0,"tables":{},"facts":{}}')}
 function save(d){localStorage.setItem(key(),JSON.stringify(d))}
-function kid(){return defaultKids.find(k=>k.id===currentKid)}
-function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.s===id));refresh()}
-function renderKids(){kids.innerHTML='';defaultKids.forEach(k=>{let b=document.createElement('button');b.className='kid'+(k.id===currentKid?' active':'');b.innerHTML=`<div class=avatar>${k.avatar}</div><div class=name>${k.name}</div><div class=muted>${k.grade}</div>`;b.onclick=()=>{currentKid=k.id;localStorage.setItem('lhKid',currentKid);renderKids();refresh()};kids.appendChild(b)})}
+function kid(){return defaultKids.find(k=>k.id===currentKid)||defaultKids[0]||{id:'',name:'Kein Profil',grade:'',classLevel:4,avatar:'🧒'}}
+function show(id){document.body.classList.toggle('parent-open',id==='parent');document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.s===id));refresh()}
+function renderKids(){
+ kids.innerHTML='';
+ defaultKids=loadAppProfiles();
+ if(!defaultKids.length){
+   kids.innerHTML='<div class="card" style="width:100%"><b>Noch kein Kinderprofil</b><div class="muted">Bitte im Elternbereich Name und Klasse anlegen.</div></div>';
+   return;
+ }
+ if(!defaultKids.some(k=>k.id===currentKid)) currentKid=defaultKids[0].id;
+ defaultKids.forEach(k=>{
+   let b=document.createElement('button');
+   b.className='kid'+(k.id===currentKid?' active':'');
+   b.innerHTML=`<div class=avatar>${k.avatar}</div><div class=name>${k.name}</div><div class=muted>${k.grade}</div>`;
+   b.onclick=()=>{
+     currentKid=k.id;
+     localStorage.setItem('lhKid',currentKid);
+     localStorage.setItem('lernhelden_active_profile_v1',currentKid);
+     renderKids();refresh();
+   };
+   kids.appendChild(b)
+ })
+}
 function renderTables(){tables.innerHTML='';for(let i=1;i<=10;i++){let b=document.createElement('button');b.className='tablebtn'+(selectedTables.includes(i)?' selected':'');b.textContent=i+'er';b.onclick=()=>{all=false;if(selectedTables.includes(i)){selectedTables=selectedTables.filter(x=>x!==i)}else selectedTables.push(i);if(!selectedTables.length)selectedTables=[i];renderTables()};tables.appendChild(b)}}
 function pickOp(b){document.querySelectorAll('.op').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');op=b.dataset.op;tableArea.style.display=(op==='*'||op==='/')?'block':'none';rangeArea.style.display=(op==='+'||op==='-'||op==='text')?'block':'none';textArea.style.display=op==='text'?'block':'none'}
 function pickDiff(b){document.querySelectorAll('.textdiff').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');difficulty=b.dataset.d}
@@ -378,7 +412,7 @@ function makeTask(){
  }
  let a=rand(0,range),b=rand(0,a);return {a,b,ans:a-b,text:`${a} − ${b} = ?`,id:`minus_${range}_${a}_${b}`}
 }
-function startGame(){gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
+function startGame(){if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
 function nextTask(){if(mode==='ten'&&gameTotal>=10){finishGame();return}if(mode==='minute'&&Date.now()-startedAt>=60000){finishGame();return}answered=false;current=makeTask();question.textContent=current.text;question.classList.toggle('textq',op==='text');answer.value='';answer.disabled=false;answer.focus();checkBtn.style.display='block';nextBtn.style.display='none';feedback.className='feedback';feedback.textContent='Du schaffst das 💪';if(mode==='ten'){gameInfo.textContent=(gameTotal+1)+' / 10';gameBar.style.width=(gameTotal/10*100)+'%'}else if(mode==='practice'){gameInfo.textContent=gameCorrect+' richtig';gameBar.style.width='0'}}
 
 function playApplause(){
@@ -452,7 +486,7 @@ function vocabTask(){
  return {q:forward?`Was heißt „${pair[0]}“ auf Englisch?`:`What does “${pair[1]}” mean in German?`,opts,ans:correct,ex:`${pair[0]} = ${pair[1]}`}
 }
 function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():wordTypeTask()}
-function startLangGame(){langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
+function startLangGame(){if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
 function nextLangTask(){if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
 function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');
  if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex;celebrateCorrect();}
@@ -506,37 +540,45 @@ renderKids();renderTables();refresh();
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
-  function kidName(){
-    const raw=(localStorage.getItem(ACTIVE_KID_KEY)||localStorage.getItem('selectedKid')||localStorage.getItem('kid')||'').toLowerCase();
-    if(raw.includes('jasmine')) return 'Jasmine';
-    if(raw.includes('elias')) return 'Elias';
-    return null;
+  function activeProfile(){
+    try{
+      const p=JSON.parse(localStorage.getItem('lernhelden_profiles_v1')||'[]');
+      const id=localStorage.getItem('lernhelden_active_profile_v1')||localStorage.getItem('lhKid');
+      return (p||[]).find(x=>String(x.id)===String(id)) || (p||[])[0] || null;
+    }catch(e){return null}
   }
 
-  function minuteStoreKey(kid){
-    return 'lernhelden_minutes_'+kid.toLowerCase()+'_'+todayKey();
+  function minuteStoreKey(profile){
+    return 'lernhelden_minutes_'+String(profile.id)+'_'+todayKey();
   }
 
   function addActiveSeconds(){
     const now=Date.now();
-    const elapsed=Math.min((now-lastTick)/1000, 15);
+    const elapsed=Math.min((now-lastTick)/1000,15);
     lastTick=now;
     if(document.hidden) return;
-    if(now-lastActivity > 60000) return; // stop after 60 sec inactivity
-    const kid=kidName();
-    if(!kid) return;
-    const secKey=minuteStoreKey(kid)+'_seconds';
+    if(now-lastActivity > 60000) return;
+    const profile=activeProfile();
+    if(!profile) return;
+    const secKey=minuteStoreKey(profile)+'_seconds';
     const old=Number(localStorage.getItem(secKey)||0);
     localStorage.setItem(secKey,String(old+elapsed));
     updateParentTimes();
   }
 
   function updateParentTimes(){
-    ['Jasmine','Elias'].forEach(k=>{
+    const box=document.getElementById('dynamicParentTimes');
+    if(!box) return;
+    let profiles=[];
+    try{profiles=JSON.parse(localStorage.getItem('lernhelden_profiles_v1')||'[]')||[]}catch(e){}
+    if(!profiles.length){
+      box.innerHTML='<div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>';
+      return;
+    }
+    box.innerHTML=profiles.map(k=>{
       const sec=Number(localStorage.getItem(minuteStoreKey(k)+'_seconds')||0);
-      const el=document.getElementById(k.toLowerCase()+'Minutes');
-      if(el) el.textContent=Math.floor(sec/60)+' Min.';
-    });
+      return `<div class="parent-time-card"><span>${String(k.name).replace(/[<>&]/g,'')} heute</span><strong>${Math.floor(sec/60)} Min.</strong></div>`;
+    }).join('');
   }
 
   ['click','touchstart','keydown','input'].forEach(evt=>{
@@ -732,8 +774,8 @@ renderKids();renderTables();refresh();
   {w:'Baum',a:'der',pl:'Bäume'}
  ];
  const verbs=[
-  {inf:'laufen',form:'läuft',s:'Das Kind ___ schnell.'},{inf:'spielen',form:'spielt',s:'Elias ___ mit dem Ball.'},
-  {inf:'lesen',form:'liest',s:'Jasmine ___ ein Buch.'},{inf:'schreiben',form:'schreibt',s:'Das Kind ___ einen Satz.'},
+  {inf:'laufen',form:'läuft',s:'Das Kind ___ schnell.'},{inf:'spielen',form:'spielt',s:'Das Kind ___ mit dem Ball.'},
+  {inf:'lesen',form:'liest',s:'Das Mädchen ___ ein Buch.'},{inf:'schreiben',form:'schreibt',s:'Das Kind ___ einen Satz.'},
   {inf:'essen',form:'isst',s:'Der Hund ___ sein Futter.'},{inf:'trinken',form:'trinkt',s:'Das Mädchen ___ Wasser.'}
  ];
  const adjs=[
@@ -806,7 +848,7 @@ renderKids();renderTables();refresh();
    {q:'Welche Zeitform? „Ich habe Fußball gespielt.“',a:'Perfekt',o:['Präsens','Präteritum','Perfekt'],e:'„habe gespielt“ ist Perfekt.'}
   ],
   satzglieder:[
-   {q:'Was ist das Subjekt? „Jasmine liest ein spannendes Buch.“',a:'Jasmine',o:['Jasmine','liest','ein spannendes Buch'],e:'Wer liest? Jasmine. → Subjekt.'},
+   {q:'Was ist das Subjekt? „Das Mädchen liest ein spannendes Buch.“',a:'Das Mädchen',o:['Das Mädchen','liest','ein spannendes Buch'],e:'Wer liest? Das Mädchen. → Subjekt.'},
    {q:'Was ist das Prädikat? „Der Hund läuft schnell.“',a:'läuft',o:['Der Hund','läuft','schnell'],e:'Was tut der Hund? Er läuft. → Prädikat.'},
    {q:'Was ist das Subjekt? „Die Kinder spielen im Garten.“',a:'Die Kinder',o:['Die Kinder','spielen','im Garten'],e:'Wer spielt? Die Kinder. → Subjekt.'}
   ],
@@ -875,7 +917,7 @@ renderKids();renderTables();refresh();
   }
   function saveProfiles(p){ localStorage.setItem(KEY,JSON.stringify(p)); }
   function activeId(){ return localStorage.getItem(ACTIVE)||''; }
-  function setActive(id){ localStorage.setItem(ACTIVE,id); render(); window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()})); }
+  function setActive(id){ localStorage.setItem(ACTIVE,id); localStorage.setItem('lhKid',id); render(); window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()})); }
   function getActiveProfile(){
     const p=loadProfiles();
     return p.find(x=>x.id===activeId()) || p[0] || null;
@@ -917,9 +959,9 @@ renderKids();renderTables();refresh();
     const p=loadProfiles();
     const obj={id:'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name,classLevel:Number(cls)};
     p.push(obj); saveProfiles(p);
-    if(!activeId()) localStorage.setItem(ACTIVE,obj.id);
+    if(!activeId()){ localStorage.setItem(ACTIVE,obj.id); localStorage.setItem('lhKid',obj.id); }
     document.getElementById('newProfileName').value='';
-    render();
+    render(); setTimeout(()=>location.reload(),150);
   }
 
   function edit(id){
@@ -928,7 +970,7 @@ renderKids();renderTables();refresh();
     const cls=prompt('Klasse (1-6):',x.classLevel); if(cls===null) return;
     const n=Number(cls);
     if(!name.trim() || !Number.isInteger(n) || n<1 || n>6){ alert('Bitte gültigen Namen und Klasse 1-6 eingeben.'); return; }
-    x.name=name.trim(); x.classLevel=n; saveProfiles(p); render();
+    x.name=name.trim(); x.classLevel=n; saveProfiles(p); render(); setTimeout(()=>location.reload(),150);
     window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()}));
   }
 
@@ -940,7 +982,7 @@ renderKids();renderTables();refresh();
       if(np.length) localStorage.setItem(ACTIVE,np[0].id);
       else localStorage.removeItem(ACTIVE);
     }
-    render();
+    render(); setTimeout(()=>location.reload(),150);
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
@@ -1153,7 +1195,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v7.1 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.0 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1175,6 +1217,217 @@ window.LernheldenCloud.recordLearningSession = async function(activeSeconds){
   await sb.from('learning_sessions').insert({child_id:profile.id,active_seconds:Math.max(0,Math.round(activeSeconds||0)),ended_at:new Date().toISOString()});
  }catch(e){console.warn('Session sync',e)}
 };
+</script>
+
+
+<script>
+(function(){
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const shuffle=a=>a.slice().sort(()=>Math.random()-.5);
+  const rs4={
+    merkwoerter:[
+      {q:'Welches Wort ist richtig geschrieben?',a:'nämlich',o:['nämlich','nemlich','nähmlich'],e:'„nämlich“ ist ein Merkwort.'},
+      {q:'Welches Wort ist richtig geschrieben?',a:'vielleicht',o:['vielleicht','fielleicht','vileicht'],e:'„vielleicht“ ist ein Merkwort.'},
+      {q:'Welches Wort ist richtig geschrieben?',a:'plötzlich',o:['plötzlich','plözlich','plötzlig'],e:'„plötzlich“ wird mit tz und lich geschrieben.'}
+    ],
+    wortbausteine:[
+      {q:'Welcher Wortbaustein macht aus „freund“ ein Adjektiv?',a:'-lich',o:['-lich','-ung','-heit'],e:'freund + lich = freundlich.'},
+      {q:'Welche Vorsilbe passt? ___glücklich',a:'un-',o:['un-','ver-','be-'],e:'un + glücklich = unglücklich.'},
+      {q:'Welches Wort gehört zur Wortfamilie „fahr“?',a:'Fahrer',o:['Fahrer','Farbe','Faden'],e:'„Fahrer“ gehört zur Wortfamilie fahr/fahren.'}
+    ],
+    verlaengern:[
+      {q:'Wie kannst du „Hund“ verlängern, um den Endlaut zu hören?',a:'Hunde',o:['Hunde','Hunds','Hunt'],e:'Hund → Hunde. So hört man das d deutlich.'},
+      {q:'Wie kannst du „Tag“ verlängern?',a:'Tage',o:['Tage','Taks','Tagee'],e:'Tag → Tage. So hört man das g.'},
+      {q:'Wie kannst du „Dieb“ verlängern?',a:'Diebe',o:['Diebe','Diepe','Dieben'],e:'Dieb → Diebe. So hört man das b.'}
+    ],
+    ableiten:[
+      {q:'Von welchem Wort kannst du „Häuser“ ableiten?',a:'Haus',o:['Haus','Hase','Hose'],e:'Häuser gehört zu Haus. Das hilft bei äu.'},
+      {q:'Von welchem Wort leitest du „Bäume“ ab?',a:'Baum',o:['Baum','Bahn','Biene'],e:'Bäume ← Baum. Deshalb schreibt man äu.'},
+      {q:'Welches Grundwort hilft bei „Hände“?',a:'Hand',o:['Hand','Hemd','Hund'],e:'Hände ← Hand.'}
+    ],
+    hoeren:[
+      {q:'Welche Silbentrennung ist richtig?',a:'Ta-sche',o:['Ta-sche','Tas-che','T-asche'],e:'Deutlich sprechen hilft beim Schreiben: Ta-sche.'},
+      {q:'Welche Silbentrennung ist richtig?',a:'Blu-me',o:['Blu-me','Blum-e','B-lume'],e:'Blu-me hat zwei Sprechsilben.'},
+      {q:'Welche Silbentrennung ist richtig?',a:'Schu-le',o:['Schu-le','Schul-e','S-chule'],e:'Schu-le hat zwei Sprechsilben.'}
+    ],
+    grammatik:[
+      {q:'Welche Wortart ist „springen“?',a:'Verb',o:['Nomen','Verb','Adjektiv'],e:'„springen“ ist ein Verb.'},
+      {q:'Welche Wortart ist „fröhlich“?',a:'Adjektiv',o:['Nomen','Verb','Adjektiv'],e:'„fröhlich“ ist ein Adjektiv.'},
+      {q:'Welche Wortart ist „Schule“?',a:'Nomen',o:['Nomen','Verb','Adjektiv'],e:'„Schule“ ist ein Nomen.'}
+    ],
+    grossklein:[
+      {q:'Welcher Satz ist richtig?',a:'Wir gehen heute schwimmen.',o:['Wir gehen heute Schwimmen.','Wir gehen heute schwimmen.','wir gehen heute schwimmen.'],e:'Verben schreibt man klein; der Satzanfang groß.'},
+      {q:'Welcher Satz ist richtig?',a:'Das Spielen macht Spaß.',o:['Das spielen macht Spaß.','Das Spielen macht Spaß.','das Spielen macht spaß.'],e:'Nach dem Artikel wird „Spielen“ zum Nomen.'},
+      {q:'Welches Wort muss großgeschrieben werden? „Der kleine ___ bellt.“',a:'Hund',o:['Hund','hund','HUND'],e:'Nomen schreibt man groß.'}
+    ],
+    satzzeichen:[
+      {q:'Welches Satzzeichen fehlt? „Kommst du morgen___“',a:'?',o:['?','!','.'],e:'Eine Frage endet mit einem Fragezeichen.'},
+      {q:'Welches Satzzeichen passt? „Pass auf___“',a:'!',o:['!','?','.'],e:'Eine Warnung endet oft mit !'},
+      {q:'Welches Satzzeichen passt? „Heute scheint die Sonne___“',a:'.',o:['.','?','!'],e:'Ein Aussagesatz endet mit einem Punkt.'}
+    ],
+    vokale:[
+      {q:'Welches Wort hat einen langen Vokal?',a:'Schule',o:['Schule','Mitte','Kanne'],e:'Das u in „Schule“ wird lang gesprochen.'},
+      {q:'Welches Wort hat einen kurzen Vokal?',a:'Mitte',o:['Mitte','Rose','Schule'],e:'Das i in „Mitte“ wird kurz gesprochen.'},
+      {q:'Warum schreibt man „Sonne“ mit nn?',a:'Der Vokal davor ist kurz.',o:['Der Vokal davor ist kurz.','Der Vokal davor ist lang.','Wegen des Artikels.'],e:'Nach einem kurzen betonten Vokal steht häufig ein Doppelkonsonant.'}
+    ]
+  };
+
+  window.generateRichtigSchreiben4Task=function(topic){
+    let key=String(topic||'').toLowerCase();
+    if(key.includes('merk')) key='merkwoerter';
+    else if(key.includes('wortbau')) key='wortbausteine';
+    else if(key.includes('verl')) key='verlaengern';
+    else if(key.includes('ableit')) key='ableiten';
+    else if(key.includes('hör')||key.includes('hoer')||key.includes('sprech')) key='hoeren';
+    else if(key.includes('gram')) key='grammatik';
+    else if(key.includes('groß')||key.includes('gross')||key.includes('klein')) key='grossklein';
+    else if(key.includes('satz')) key='satzzeichen';
+    else if(key.includes('vokal')) key='vokale';
+    else key=pick(Object.keys(rs4));
+    const t=pick(rs4[key]);
+    return {q:t.q,ans:t.a,options:shuffle(t.o),ex:t.e,grade:4,topic:key};
+  };
+
+  const old=window.generateGermanGrade4Task;
+  if(typeof old==='function'){
+    window.generateGermanGrade4Task=function(topic){
+      const t=String(topic||'').toLowerCase();
+      if(t.includes('recht')||t.includes('schreib')||t.includes('merk')||t.includes('vokal')||
+         t.includes('satz')||t.includes('ableit')||t.includes('verl')||t.includes('wortbau')||
+         t.includes('hör')||t.includes('hoer')){
+        return window.generateRichtigSchreiben4Task(topic);
+      }
+      return old(topic);
+    };
+    window.generateGermanLearningTask=window.generateGermanGrade4Task;
+    window.generateGermanWordTask=window.generateGermanGrade4Task;
+  }
+})();
+</script>
+
+
+<style>
+#klasse4Hub{display:none}
+body.k4-open #klasse4Hub{display:block}
+.k4-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0}
+.k4-topic{border:1px solid #dbe3ef;border-radius:16px;padding:14px;background:#fff;cursor:pointer;text-align:left}
+.k4-topic b{display:block;margin-bottom:5px}
+.k4-pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#eef5ff;margin:3px;font-size:.85rem}
+#k4Answers{display:grid;gap:9px;margin-top:14px}
+#k4Answers button{padding:12px;border-radius:12px;border:1px solid #ccd6e4;background:white;font-size:1rem}
+#k4Feedback{margin-top:12px;padding:12px;border-radius:12px;display:none}
+#k4Input{width:100%;padding:12px;border:1px solid #ccd6e4;border-radius:12px;font-size:1.1rem;margin-top:12px}
+</style>
+
+<section id="klasse4Hub" class="card" style="margin-top:18px">
+  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+    <div><h2 style="margin:0">🎒 4. Klasse – Intensiv üben</h2>
+    <div class="muted">Aufgabentypen passend zu den fotografierten Übungsblättern – mit neuen Zahlen und Erklärungen.</div></div>
+    <button onclick="document.body.classList.remove('k4-open')">Schließen</button>
+  </div>
+  <div class="k4-grid">
+    <button class="k4-topic" onclick="K4.start('math')"><b>➗ Mathe 4</b>Zahlenraum 1000, schriftlich rechnen, Sachaufgaben, Größen, Zeit, Diagramme</button>
+    <button class="k4-topic" onclick="K4.start('deutsch')"><b>✍️ Richtig schreiben</b>Rechtschreibung, Grammatik und Zeitformen</button>
+  </div>
+  <div id="k4Game" style="display:none">
+    <div id="k4Topic" class="k4-pill"></div>
+    <h3 id="k4Question"></h3>
+    <div id="k4Answers"></div>
+    <input id="k4Input" inputmode="decimal" placeholder="Antwort eingeben" style="display:none">
+    <button id="k4Check" style="display:none;margin-top:10px" onclick="K4.checkInput()">Prüfen</button>
+    <div id="k4Feedback"></div>
+    <button id="k4Next" style="display:none;margin-top:10px" onclick="K4.next()">Nächste Aufgabe</button>
+  </div>
+</section>
+
+<script>
+window.K4=(function(){
+ const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+ const P=a=>a[Math.floor(Math.random()*a.length)];
+ const S=a=>a.slice().sort(()=>Math.random()-.5);
+ let mode='math', cur=null;
+
+ function mc(topic,q,a,opts,ex){return{topic,q,a:String(a),opts:S(opts.map(String)),ex}}
+ function inp(topic,q,a,ex){return{topic,q,a:String(a),ex}}
+ function fmtHM(m){return Math.floor(m/60)+' h '+(m%60)+' min'}
+
+ const deutschZeit=[
+  ()=>mc('Zeitformen','Welche Zeitform hat der Satz: „Mia spielt im Garten.“','Präsens',['Präsens','Präteritum','Perfekt'],'„spielt“ beschreibt hier die Gegenwart: Präsens.'),
+  ()=>mc('Zeitformen','Welche Zeitform hat der Satz: „Mia spielte im Garten.“','Präteritum',['Präsens','Präteritum','Perfekt'],'„spielte“ steht im Präteritum.'),
+  ()=>mc('Zeitformen','Welche Zeitform hat der Satz: „Mia hat im Garten gespielt.“','Perfekt',['Präsens','Präteritum','Perfekt'],'„hat … gespielt“ ist Perfekt.'),
+  ()=>mc('Zeitformen','Setze „gehen“ ins Präteritum: „Wir ___ nach Hause.“','gingen',['gingen','gehen','sind gegangen'],'Präteritum von „gehen“: wir gingen.'),
+  ()=>mc('Zeitformen','Setze „lernen“ ins Perfekt: „Ich ___ für die Schule ___.“','habe gelernt',['habe gelernt','lernte','lerne'],'Perfekt: haben/sein + Partizip II → „habe gelernt“.')
+ ];
+
+ const deutschBase=[
+  ()=>mc('Merkwörter','Welches Wort ist richtig geschrieben?','nämlich',['nämlich','nemlich','nähmlich'],'„nämlich“ ist ein Merkwort.'),
+  ()=>mc('Verlängern','Wie verlängerst du „Tag“, damit du den Endlaut hörst?','Tage',['Tage','Take','Tags'],'Tag → Tage: Jetzt hört man das g.'),
+  ()=>mc('Ableiten','Welches Grundwort hilft bei „Bäume“?','Baum',['Baum','Bahn','Biene'],'Bäume ← Baum. So lässt sich „äu“ ableiten.'),
+  ()=>mc('Wortarten','Welche Wortart ist „fröhlich“?','Adjektiv',['Nomen','Verb','Adjektiv'],'„fröhlich“ beschreibt eine Eigenschaft.'),
+  ()=>mc('Groß/Klein','Welcher Satz ist richtig?','Das Spielen macht Spaß.',['Das Spielen macht Spaß.','Das spielen macht Spaß.','das Spielen macht spaß.'],'Nach dem Artikel „das“ wird „Spielen“ als Nomen gebraucht.'),
+  ()=>mc('Satzzeichen','Welches Satzzeichen fehlt: „Kommst du morgen___“','?',['?','!','.'],'Eine Frage endet mit einem Fragezeichen.'),
+  ()=>mc('Vokale','Welches Wort hat einen kurzen betonten Vokal?','Mitte',['Mitte','Rose','Schule'],'Das i in „Mitte“ wird kurz gesprochen.'),
+  ()=>mc('Wortbausteine','Welche Endung macht aus „freund“ ein Adjektiv?','-lich',['-lich','-ung','-heit'],'freund + lich = freundlich.')
+ ];
+
+ function mathTask(){
+  const gens=[
+   ()=>{let a=R(120,699),b=R(100,299);return inp('Schriftlich addieren',`${a} + ${b} = ?`,a+b,'Addiere Einer, Zehner und Hunderter. Denke an mögliche Überträge.')},
+   ()=>{let b=R(40,499),a=R(b+50,999);return inp('Schriftlich subtrahieren',`${a} − ${b} = ?`,a-b,'Rechne stellenweise von rechts nach links. Wenn nötig, entbündele einen Zehner oder Hunderter.')},
+   ()=>{let n=R(101,998);return mc('Nachbarzahlen',`Welche Zahlen sind Vorgänger und Nachfolger von ${n}?`,`${n-1} und ${n+1}`,[`${n-1} und ${n+1}`,`${n-10} und ${n+10}`,`${n-100} und ${n+100}`],'Vorgänger ist 1 kleiner, Nachfolger ist 1 größer.')},
+   ()=>{let n=R(11,989);let lo=Math.floor(n/10)*10,hi=lo+10;return mc('Nachbarzehner',`Zwischen welchen Nachbarzehnern liegt ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${n-1} und ${n+1}`,`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`],'Nachbarzehner enden auf 0.')},
+   ()=>{let n=R(101,899);let lo=Math.floor(n/100)*100,hi=lo+100;return mc('Nachbarhunderter',`Zwischen welchen Nachbarhundertern liegt ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${Math.floor(n/10)*10} und ${Math.floor(n/10)*10+10}`,`${n-1} und ${n+1}`],'Nachbarhunderter sind die Hunderter direkt unter und über der Zahl.')},
+   ()=>{let n=R(101,999);let a=Math.round(n/10)*10;return inp('Runden auf Zehner',`Runde ${n} auf den nächsten Zehner.`,a,'Einer 0–4: abrunden. Einer 5–9: aufrunden.')},
+   ()=>{let n=R(101,999);let a=Math.round(n/100)*100;return inp('Runden auf Hunderter',`Runde ${n} auf den nächsten Hunderter.`,a,'Die letzten zwei Ziffern 00–49: abrunden; 50–99: aufrunden.')},
+   ()=>{let h=R(1,9),z=R(0,9),e=R(0,9),n=h*100+z*10+e;return inp('Stellenwert',`${h} Hunderter, ${z} Zehner und ${e} Einer ergeben welche Zahl?`,n,`${h}00 + ${z}0 + ${e} = ${n}.`)},
+   ()=>{let a=R(2,9),b=R(2,9)*10;return inp('Multiplizieren',`${a} · ${b} = ?`,a*b,'Rechne zuerst ohne die Null und hänge anschließend die Null an.')},
+   ()=>{let d=R(2,9),q=R(2,9)*10,n=d*q;return inp('Dividieren',`${n} : ${d} = ?`,q,'Nutze die passende Einmaleins-Aufgabe und beachte die Zehnerstelle.')},
+   ()=>{let a=R(2,9),b=R(21,89);return inp('Halbschriftlich multiplizieren',`${a} · ${b} = ?`,a*b,`Zerlege ${b} in Zehner und Einer, multipliziere beide Teile und addiere.`)},
+   ()=>{let d=P([2,3,4,5,6,8]),q=R(12,120),n=d*q;return inp('Halbschriftlich dividieren',`${n} : ${d} = ?`,q,'Zerlege die Zahl in gut teilbare Teilzahlen und addiere die Teilergebnisse.')},
+   ()=>{let a=R(120,450),b=R(120,450);return inp('Rechenspur – Zahlenraum 1000',`${a} + ${b} = ?`,a+b,'Rechne sorgfältig im Zahlenraum bis 1000.')},
+   ()=>{let x=R(120,400),y=R(80,300);return inp('Sachaufgabe',`Am Montag besuchen ${x} Kinder ein Museum, am Dienstag ${y}. Wie viele sind es an beiden Tagen zusammen?`,x+y,'„Insgesamt“ bedeutet hier: addieren.')},
+   ()=>mc('Sachaufgabe – passende Frage','In einer Schule sind heute 123 Mädchen und 130 Jungen. Kannst du berechnen, wie viele Kinder vor 20 Jahren dort waren?','Nein',['Ja','Nein'],'Dazu fehlen Angaben über die Schülerzahl vor 20 Jahren.'),
+   ()=>{let cm=R(101,899);return mc('Längen',`${cm} cm sind …`,`${Math.floor(cm/100)} m ${cm%100} cm`,[`${Math.floor(cm/100)} m ${cm%100} cm`,`${cm} m`,`${Math.floor(cm/10)} m ${cm%10} cm`],'100 cm = 1 m.')},
+   ()=>{let g=R(1,999);return inp('Gewicht',`Wie viele Gramm fehlen von ${g} g bis 1 kg?`,1000-g,'1 kg = 1000 g. Rechne 1000 − die gegebene Grammzahl.')},
+   ()=>{let h=R(1,5),m=P([0,15,30,45]);return inp('Zeitspannen',`${h} h ${m} min sind wie viele Minuten?`,h*60+m,'1 Stunde = 60 Minuten.')},
+   ()=>{let m=R(61,299);return mc('Zeit umwandeln',`${m} Minuten sind …`,fmtHM(m),[fmtHM(m),`${m} h`,`${Math.floor(m/100)} h ${m%100} min`],'Teile die Minuten durch 60. Der Rest sind Minuten.')},
+   ()=>{let vals=[R(20,80),R(20,80),R(20,80),R(20,80)];let sum=vals.reduce((a,b)=>a+b,0);return inp('Säulendiagramm / Tabelle',`Eine Tabelle zeigt ${vals.join(', ')} Kinder in vier Gruppen. Wie viele Kinder sind es zusammen?`,sum,'Addiere alle vier Werte. Das entspricht dem Auswerten der Säulenwerte.')},
+   ()=>mc('Kreisdiagramm','In einem Kreisdiagramm ist eine Hälfte für Sara, ein Viertel für Max und ein Viertel für Timo. Wer hat die meisten Stimmen?','Sara',['Sara','Max','Timo'],'Eine Hälfte ist größer als ein Viertel.'),
+   ()=>{let start=R(1,10),step=P([2,3,5,10]);return inp('Muster',`Setze das Zahlenmuster fort: ${start}, ${start+step}, ${start+2*step}, ${start+3*step}, ___`,start+4*step,`Jedes Mal kommen ${step} dazu.`)},
+   ()=>{let w=R(2,8),h=R(2,6);return mc('Vergrößern / verkleinern',`Ein Rechteck ist ${w} Kästchen breit und ${h} Kästchen hoch. Alle Seiten werden doppelt so lang. Wie groß ist es danach?`,`${w*2} × ${h*2}`,[`${w*2} × ${h*2}`,`${w+2} × ${h+2}`,`${w} × ${h}`],'Beim Vergrößern mit Faktor 2 wird jede Seitenlänge verdoppelt.')}
+  ];
+  return P(gens)();
+ }
+
+ function germanTask(){return P(deutschBase.concat(deutschZeit))()}
+
+ function render(){
+  document.getElementById('k4Game').style.display='block';
+  document.getElementById('k4Topic').textContent=cur.topic;
+  document.getElementById('k4Question').textContent=cur.q;
+  const A=document.getElementById('k4Answers'),I=document.getElementById('k4Input'),C=document.getElementById('k4Check'),F=document.getElementById('k4Feedback'),N=document.getElementById('k4Next');
+  A.innerHTML='';F.style.display='none';N.style.display='none';I.value='';
+  if(cur.opts){
+    I.style.display='none';C.style.display='none';
+    cur.opts.forEach(o=>{let b=document.createElement('button');b.textContent=o;b.onclick=()=>check(o);A.appendChild(b)})
+  } else {
+    I.style.display='block';C.style.display='inline-block';setTimeout(()=>I.focus(),50)
+  }
+ }
+ function norm(x){return String(x).trim().toLowerCase().replace(',','.').replace(/\s+/g,' ')}
+ function check(v){
+  const ok=norm(v)===norm(cur.a),F=document.getElementById('k4Feedback');
+  F.style.display='block';
+  F.innerHTML=ok?'⭐ <b>Richtig!</b>':`💡 <b>Noch nicht.</b> Richtige Antwort: <b>${cur.a}</b><br>${cur.ex}`;
+  if(ok && typeof speakBravo==='function') try{speakBravo()}catch(e){}
+  document.getElementById('k4Next').style.display='inline-block';
+ }
+ return{
+  start(m){mode=m;document.body.classList.add('k4-open');cur=m==='math'?mathTask():germanTask();render();document.getElementById('klasse4Hub').scrollIntoView({behavior:'smooth'})},
+  next(){cur=mode==='math'?mathTask():germanTask();render()},
+  checkInput(){check(document.getElementById('k4Input').value)}
+ }
+})();
 </script>
 
 </body></html>
