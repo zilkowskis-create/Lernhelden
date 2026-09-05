@@ -141,7 +141,7 @@ body.parent-open #parentPinBox{display:block}
 </style>
 
 </head>
-<body><button id="klasse4Entry" onclick="document.body.classList.add('k4-open');document.getElementById('klasse4Hub').scrollIntoView({behavior:'smooth'})" style="position:fixed;right:14px;bottom:14px;z-index:999;padding:11px 15px;border-radius:999px;border:0;box-shadow:0 4px 18px #0003">🎒 4. Klasse</button>
+<body>
 <div class="app">
 <div class="top"><div class="logo">Lern<i>helden</i> <span>✨</span></div><button class="pill" style="border:0" onclick="show('parent')">👨‍👩‍👧 Eltern</button></div>
 
@@ -1195,7 +1195,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.0 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.2 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1307,7 +1307,7 @@ window.LernheldenCloud.recordLearningSession = async function(activeSeconds){
 
 
 <style>
-#klasse4Hub{display:none}
+#klasse4Hub{display:none!important}
 body.k4-open #klasse4Hub{display:block}
 .k4-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0}
 .k4-topic{border:1px solid #dbe3ef;border-radius:16px;padding:14px;background:#fff;cursor:pointer;text-align:left}
@@ -1428,6 +1428,84 @@ window.K4=(function(){
   checkInput(){check(document.getElementById('k4Input').value)}
  }
 })();
+</script>
+
+
+<style>
+#v82{display:none;position:fixed;inset:0;z-index:9999;background:#f5f7fb;overflow:auto;padding:16px}
+.v82box{max-width:760px;margin:auto}.v82head{display:flex;justify-content:space-between;align-items:center}
+.v82grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.v82btn{padding:14px;border:1px solid #dbe2ea;border-radius:15px;background:white;text-align:left}
+#v82ans{display:grid;gap:8px}#v82ans button,#v82input{padding:12px;border:1px solid #ccd5df;border-radius:12px;background:white;font-size:1rem}
+</style>
+<div id="v82"><div class="v82box">
+<div class="v82head"><h2 id="v82title">Mathe</h2><button onclick="V82.close()">✕</button></div>
+<div id="v82menu" class="v82grid"></div><div id="v82game" style="display:none">
+<b id="v82topic"></b><h3 id="v82q"></h3><div id="v82ans"></div>
+<input id="v82input" style="display:none;width:100%;box-sizing:border-box" inputmode="decimal">
+<button id="v82check" style="display:none;margin-top:8px" onclick="V82.checkInput()">Prüfen</button>
+<div id="v82fb" style="display:none;margin-top:12px"></div>
+<button id="v82next" style="display:none;margin-top:10px" onclick="V82.next()">Nächste Aufgabe</button>
+</div></div></div>
+<script>
+window.V82=(()=>{
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,P=a=>a[Math.floor(Math.random()*a.length)],S=a=>a.slice().sort(()=>Math.random()-.5);
+let area='',topic='',cur;
+const mainMath={times:'× Multiplikation',divide:'÷ Division',plus:'+ Addition',minus:'− Subtraktion',text:'📝 Textaufgaben',grade4:'🎒 Mathe 4. Klasse'};
+const grade4={written:'Schriftlich rechnen',numbers:'Zahlen bis 1.000',semi:'Halbschriftlich rechnen',sizes:'Größen',time:'Zeit',charts:'Diagramme',patterns:'Muster & Geometrie',stories:'Sachaufgaben 4. Klasse',mixed:'🔀 Alles gemischt'};
+const de={old:'Bisherige Deutschübungen',write:'✍️ Richtig schreiben'};
+const writing={memory:'Merkwörter',blocks:'Wortbausteine',extend:'Verlängern & Ableiten',case:'Groß / Klein',punct:'Satzzeichen',vowels:'Kurze & lange Vokale',grammar:'Grammatik',tenses:'Zeitformen',mixedde:'🔀 Gemischt'};
+function menu(obj){document.getElementById('v82menu').innerHTML=Object.entries(obj).map(([k,v])=>`<button class="v82btn" onclick="V82.pick('${k}')"><b>${v}</b></button>`).join('');document.getElementById('v82game').style.display='none'}
+function open(a){area=a;document.getElementById('v82').style.display='block'; if(a==='math'){title('➗ Mathe');menu(mainMath)}else{title('🌍 Sprachen');menu({de:'🇩🇪 Deutsch',en:'🇬🇧 Englisch'})}}
+function title(x){document.getElementById('v82title').textContent=x}
+function pick(k){
+ if(k==='grade4'){area='g4';title('🎒 Mathe 4. Klasse');menu(grade4);return}
+ if(area==='lang'&&k==='de'){area='de';title('🇩🇪 Deutsch');menu(de);return}
+ if(area==='lang'&&k==='en'){area='en';title('🇬🇧 Englisch');menu({vocab:'Vokabeln',nouns:'Nomen',verbs:'Verben',adjectives:'Adjektive',mixeden:'Gemischt'});return}
+ if(area==='de'&&k==='write'){area='write';title('✍️ Richtig schreiben');menu(writing);return}
+ topic=k;cur=task();render()
+}
+function inp(t,q,a,e){return{t,q,a:String(a),e}} function mc(t,q,a,o,e){return{t,q,a:String(a),o:S(o.map(String)),e}}
+function basicMath(){
+ if(topic==='times'){let a=R(2,10),b=R(2,10);return inp('Multiplikation',`${a} · ${b} = ?`,a*b,'Nutze das Einmaleins.')}
+ if(topic==='divide'){let d=R(2,10),q=R(2,10);return inp('Division',`${d*q} : ${d} = ?`,q,'Nutze die Umkehraufgabe der Multiplikation.')}
+ if(topic==='plus'){let a=R(1,500),b=R(1,400);return inp('Addition',`${a} + ${b} = ?`,a+b,'Addiere stellenweise.')}
+ if(topic==='minus'){let b=R(1,400),a=R(b,999);return inp('Subtraktion',`${a} − ${b} = ?`,a-b,'Subtrahiere stellenweise.')}
+ let a=R(50,300),b=R(20,200);return inp('Textaufgabe',`Lena hat ${a} Sticker und bekommt ${b} dazu. Wie viele hat sie?`,a+b,'„Dazu“ bedeutet addieren.')
+}
+function g4(t=topic){
+ if(t==='mixed')t=P(Object.keys(grade4).filter(x=>x!=='mixed'));
+ if(t==='written'){let add=Math.random()<.5,b=R(80,399),a=R(b+50,699);return add?inp('Schriftlich addieren',`${a} + ${b} = ?`,a+b,'Einer unter Einer; Überträge beachten.'):inp('Schriftlich subtrahieren',`${a} − ${b} = ?`,a-b,'Von rechts nach links rechnen und nötigenfalls entbündeln.')}
+ if(t==='numbers'){let n=R(101,899),kind=R(1,3);if(kind===1)return inp('Runden',`Runde ${n} auf Hunderter.`,Math.round(n/100)*100,'00–49 abrunden, 50–99 aufrunden.');if(kind===2)return inp('Stellenwert',`Wie viele Zehner hat die Zahl ${n} insgesamt?`,Math.floor(n/10),'Teile die Zahl gedanklich durch 10.');return mc('Nachbarhunderter',`Zwischen welchen Hundertern liegt ${n}?`,`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`,[`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`,`${n-1} und ${n+1}`,`${Math.floor(n/10)*10} und ${Math.floor(n/10)*10+10}`],'Suche den Hunderter darunter und darüber.')}
+ if(t==='semi'){let a=R(2,9),b=R(21,89);return inp('Halbschriftlich multiplizieren',`${a} · ${b} = ?`,a*b,`Zerlege ${b} in Zehner und Einer.`)}
+ if(t==='sizes'){if(Math.random()<.5){let cm=R(101,899);return inp('Längen',`${cm} cm = wie viele mm?`,cm*10,'1 cm = 10 mm.')}let g=R(100,950);return inp('Gewichte',`Wie viele Gramm fehlen von ${g} g bis 1 kg?`,1000-g,'1 kg = 1000 g.')}
+ if(t==='time'){let h=R(1,5),m=P([0,15,30,45]);return inp('Zeit',`${h} h ${m} min = wie viele Minuten?`,h*60+m,'1 Stunde = 60 Minuten.')}
+ if(t==='charts'){let a=R(10,50),b=R(10,50),c=R(10,50);return inp('Diagramme',`Drei Säulen zeigen ${a}, ${b} und ${c}. Wie viele insgesamt?`,a+b+c,'Addiere die drei Säulenwerte.')}
+ if(t==='patterns'){let a=R(1,15),s=P([2,3,5,10]);return inp('Zahlenmuster',`${a}, ${a+s}, ${a+2*s}, ${a+3*s}, ___`,a+4*s,`Die Regel ist +${s}.`)}
+ let a=R(100,350),b=R(80,300);return inp('Sachaufgabe 4. Klasse',`Am Montag kommen ${a} Besucher, am Dienstag ${b}. Wie viele insgesamt?`,a+b,'Gesucht ist die Gesamtzahl: addieren.')
+}
+const deTasks={
+ memory:()=>mc('Merkwörter','Was ist richtig?','nämlich',['nämlich','nemlich','nähmlich'],'„nämlich“ ist ein Merkwort.'),
+ blocks:()=>mc('Wortbausteine','freund + ___ = freundlich','lich',['lich','heit','ung'],'Der Wortbaustein -lich bildet hier ein Adjektiv.'),
+ extend:()=>mc('Verlängern','Wie verlängerst du „Tag“?','Tage',['Tage','Take','Tags'],'Tag → Tage, dadurch hört man g.'),
+ case:()=>mc('Groß / Klein','Was ist richtig?','Das Spielen macht Spaß.',['Das Spielen macht Spaß.','Das spielen macht Spaß.'],'Nach „das“ wird Spielen als Nomen gebraucht.'),
+ punct:()=>mc('Satzzeichen','Kommst du morgen___','?',['?','.','!'],'Eine Frage endet mit ?.'),
+ vowels:()=>mc('Vokale','Welches Wort hat einen kurzen Vokal?','Mitte',['Mitte','Rose','Schule'],'Das i in Mitte ist kurz.'),
+ grammar:()=>mc('Grammatik','Welche Wortart ist „fröhlich“?','Adjektiv',['Nomen','Verb','Adjektiv'],'Es beschreibt eine Eigenschaft.'),
+ tenses:()=>P([()=>mc('Zeitformen','„Ich spiele.“ ist …','Präsens',['Präsens','Präteritum','Perfekt'],'Präsens = Gegenwart.'),()=>mc('Zeitformen','„Ich spielte.“ ist …','Präteritum',['Präsens','Präteritum','Perfekt'],'spielte steht im Präteritum.'),()=>mc('Zeitformen','„Ich habe gespielt.“ ist …','Perfekt',['Präsens','Präteritum','Perfekt'],'habe + gespielt = Perfekt.')])()
+};
+function task(){
+ if(area==='math')return basicMath(); if(area==='g4')return g4();
+ if(area==='write'){if(topic==='mixedde')topic=P(Object.keys(writing).filter(x=>x!=='mixedde'));return deTasks[topic]()}
+ if(area==='en'){let pairs=[['Haus','house'],['Hund','dog'],['Buch','book'],['Schule','school'],['spielen','play'],['lernen','learn'],['schnell','fast']];let w=P(pairs);return mc('Englisch',`Was heißt „${w[0]}“?`,w[1],[w[1],P(pairs)[1],P(pairs)[1]],'Präge dir das Wortpaar ein.')}
+ return mc('Deutsch','Welche Wortart ist „laufen“?','Verb',['Nomen','Verb','Adjektiv'],'„laufen“ bezeichnet eine Tätigkeit.')
+}
+function render(){document.getElementById('v82game').style.display='block';document.getElementById('v82topic').textContent=cur.t;document.getElementById('v82q').textContent=cur.q;let A=document.getElementById('v82ans'),I=document.getElementById('v82input'),C=document.getElementById('v82check'),F=document.getElementById('v82fb'),N=document.getElementById('v82next');A.innerHTML='';F.style.display=N.style.display='none';I.value='';if(cur.o){I.style.display=C.style.display='none';cur.o.forEach(x=>{let b=document.createElement('button');b.textContent=x;b.onclick=()=>check(x);A.appendChild(b)})}else{I.style.display='block';C.style.display='inline-block'}}
+function norm(x){return String(x).trim().toLowerCase().replace(',','.').replace(/\s+/g,' ')}
+function check(v){let ok=norm(v)===norm(cur.a),F=document.getElementById('v82fb');F.style.display='block';F.innerHTML=ok?'⭐ <b>Richtig!</b>':`💡 <b>Noch nicht.</b> Richtig: <b>${cur.a}</b><br>${cur.e}`;document.getElementById('v82next').style.display='inline-block';if(ok&&typeof speakBravo==='function')try{speakBravo()}catch(e){}}
+return{open,pick,next(){cur=task();render()},checkInput(){check(document.getElementById('v82input').value)},close(){document.getElementById('v82').style.display='none'}}
+})();
+document.addEventListener('click',e=>{let b=e.target.closest('button,.card,.subject-card,[role="button"]');if(!b||b.closest('#v82'))return;let t=(b.innerText||'').trim().toLowerCase();if(t==='mathe'||t.startsWith('mathe\\n')){e.preventDefault();e.stopImmediatePropagation();V82.open('math')}else if(t==='sprachen'||t.startsWith('sprachen\\n')){e.preventDefault();e.stopImmediatePropagation();V82.open('lang')}},true);
 </script>
 
 </body></html>
