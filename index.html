@@ -966,6 +966,7 @@ renderKids();renderTables();refresh();
 (function(){
   const KEY='lernhelden_profiles_v1';
   const ACTIVE='lernhelden_active_profile_v1';
+  const DELETED='lernhelden_deleted_profiles_v1';
 
   function loadProfiles(){
     try{
@@ -975,6 +976,13 @@ renderKids();renderTables();refresh();
     return [];
   }
   function saveProfiles(p){ localStorage.setItem(KEY,JSON.stringify(p)); }
+  function loadDeleted(){
+    try{
+      const x=JSON.parse(localStorage.getItem(DELETED)||'[]');
+      return Array.isArray(x)?x:[];
+    }catch(e){return []}
+  }
+  function saveDeleted(x){localStorage.setItem(DELETED,JSON.stringify(x||[]));}
   function activeId(){ return localStorage.getItem(ACTIVE)||''; }
   function setActive(id){ localStorage.setItem(ACTIVE,id); localStorage.setItem('lhKid',id); render(); window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()})); }
   function getActiveProfile(){
@@ -1036,12 +1044,40 @@ renderKids();renderTables();refresh();
   function del(id){
     const p=loadProfiles(), x=p.find(v=>v.id===id); if(!x) return;
     if(!confirm(`Profil „${x.name}“ wirklich löschen?`)) return;
-    const np=p.filter(v=>v.id!==id); saveProfiles(np);
-    if(activeId()===id){
-      if(np.length) localStorage.setItem(ACTIVE,np[0].id);
-      else localStorage.removeItem(ACTIVE);
+
+    // Mark deletion before changing the visible list. This prevents a later
+    // cloud pull from bringing the child back while the remote delete is pending.
+    const deleted=loadDeleted();
+    if(!deleted.some(d=>d.id===x.id)){
+      deleted.push({id:x.id,name:x.name,classLevel:Number(x.classLevel),deletedAt:new Date().toISOString()});
+      saveDeleted(deleted);
     }
-    render(); setTimeout(()=>location.reload(),150);
+
+    const np=p.filter(v=>v.id!==id);
+    saveProfiles(np);
+
+    if(activeId()===id || localStorage.getItem('lhKid')===id){
+      if(np.length){
+        localStorage.setItem(ACTIVE,np[0].id);
+        localStorage.setItem('lhKid',np[0].id);
+      }else{
+        localStorage.removeItem(ACTIVE);
+        localStorage.removeItem('lhKid');
+      }
+    }
+
+    render();
+    window.dispatchEvent(new CustomEvent('lernhelden-profile-changed',{detail:getActiveProfile()}));
+
+    // If cloud is available, request immediate deletion. The tombstone remains
+    // until the cloud helper confirms that deletion succeeded.
+    if(typeof window.LernheldenCloudDeleteProfile==='function'){
+      Promise.resolve(window.LernheldenCloudDeleteProfile(x))
+        .then(()=>setTimeout(()=>location.reload(),350))
+        .catch(()=>setTimeout(()=>location.reload(),350));
+    }else{
+      setTimeout(()=>location.reload(),350);
+    }
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
@@ -1102,6 +1138,17 @@ window.getLernheldenGrade=function(){
    try{return JSON.parse(localStorage.getItem('lernhelden_profiles_v1')||'[]')||[];}catch(e){return []}
  }
  function saveLocalProfiles(p){localStorage.setItem('lernhelden_profiles_v1',JSON.stringify(p||[]));}
+ function getDeletedProfiles(){
+   try{return JSON.parse(localStorage.getItem('lernhelden_deleted_profiles_v1')||'[]')||[];}catch(e){return []}
+ }
+ function saveDeletedProfiles(p){localStorage.setItem('lernhelden_deleted_profiles_v1',JSON.stringify(p||[]));}
+ function isDeletedProfile(row){
+   return getDeletedProfiles().some(d=>
+     (d.id && row.id===d.id) ||
+     (String(d.name||'').trim().toLowerCase()===String(row.name||'').trim().toLowerCase() &&
+      Number(d.classLevel)===Number(row.class_level))
+   );
+ }
 
  async function ensureFamily(){
    if(!session) return null;
@@ -1116,21 +1163,111 @@ window.getLernheldenGrade=function(){
    return data;
  }
 
+ async function cloudRowsForProfile(fam,profile){
+   let q=sb.from('children').select('id,name,class_level').eq('family_id',fam.id);
+   if(/^[0-9a-f-]{36}$/i.test(profile.id||'')){
+     q=q.eq('id',profile.id);
+   }else{
+     q=q.eq('name',profile.name).eq('class_level',Number(profile.classLevel));
+   }
+   const {data,error}=await q;
+   if(error) throw error;
+   return data||[];
+ }
+
+ async function deleteCloudProfile(profile){
+   if(!session || !profile) return false;
+   const fam=await ensureFamily(); if(!fam) return false;
+
+   let q=sb.from('children').delete().eq('family_id',fam.id);
+   if(/^[0-9a-f-]{36}$/i.test(profile.id||'')){
+     q=q.eq('id',profile.id);
+   }else{
+     q=q.eq('name',profile.name).eq('class_level',Number(profile.classLevel));
+   }
+
+   const {error}=await q;
+   if(error) throw error;
+
+   // IMPORTANT: don't trust "no error" alone. Verify that the row is really gone.
+   const stillThere=await cloudRowsForProfile(fam,profile);
+   if(stillThere.length){
+     // Keep tombstone. The profile stays hidden locally and deletion is retried later.
+     return false;
+   }
+
+   // Only now is it safe to clear the tombstone.
+   const remaining=getDeletedProfiles().filter(d=>
+     !(d.id===profile.id ||
+       (String(d.name||'').trim().toLowerCase()===String(profile.name||'').trim().toLowerCase() &&
+        Number(d.classLevel)===Number(profile.classLevel)))
+   );
+   saveDeletedProfiles(remaining);
+   return true;
+ }
+
+ window.LernheldenCloudDeleteProfile=async function(profile){
+   try{
+     if(!configured()) return false;
+     if(!sb){
+       sb=window.supabase.createClient(CFG.url,CFG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+     }
+     if(!session){
+       const r=await sb.auth.getSession();
+       session=r.data.session;
+     }
+     if(!session) return false;
+     return await deleteCloudProfile(profile);
+   }catch(e){
+     console.error('Profil konnte nicht aus der Cloud gelöscht werden:',e);
+     status('Profil lokal gelöscht; Cloud-Löschung wird beim nächsten Sync erneut versucht.','cloud-warn');
+     return false;
+   }
+ };
+
+ async function flushDeletedProfiles(){
+   if(!session) return;
+   const pending=getDeletedProfiles().slice();
+   for(const d of pending){
+     try{
+       const ok=await deleteCloudProfile(d);
+       if(!ok) console.warn('Profil-Löschung noch ausstehend:',d.name);
+     }catch(e){
+       console.warn('Pending profile delete',e);
+     }
+   }
+ }
+
  async function pullProfiles(){
    const fam=await ensureFamily(); if(!fam) return;
+   await flushDeletedProfiles();
    const {data,error}=await sb.from('children').select('*').eq('family_id',fam.id).order('created_at');
    if(error) throw error;
-   const mapped=(data||[]).map(x=>({id:x.id,name:x.name,classLevel:Number(x.class_level)}));
+   const deletedNow=getDeletedProfiles();
+   const mapped=(data||[]).filter(x=>!deletedNow.some(d=>
+     (d.id && x.id===d.id) ||
+     (String(d.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase() &&
+      Number(d.classLevel)===Number(x.class_level))
+   )).map(x=>({id:x.id,name:x.name,classLevel:Number(x.class_level)}));
    saveLocalProfiles(mapped);
    if(mapped.length && !mapped.some(x=>x.id===localStorage.getItem('lernhelden_active_profile_v1'))){
      localStorage.setItem('lernhelden_active_profile_v1',mapped[0].id);
+     localStorage.setItem('lhKid',mapped[0].id);
+   }else if(!mapped.length){
+     localStorage.removeItem('lernhelden_active_profile_v1');
+     localStorage.removeItem('lhKid');
    }
    window.dispatchEvent(new Event('storage'));
  }
 
  async function pushProfiles(){
    const fam=await ensureFamily(); if(!fam) return;
-   const local=getLocalProfiles();
+   const deleted=getDeletedProfiles();
+   const local=getLocalProfiles().filter(x=>!deleted.some(d=>
+     d.id===x.id ||
+     (String(d.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase() &&
+      Number(d.classLevel)===Number(x.classLevel))
+   ));
    for(const x of local){
      // Old local IDs are strings; cloud IDs are UUIDs. Match cloud rows by exact UUID when possible,
      // otherwise by name+class in this family, then insert.
@@ -1254,7 +1391,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v9.2 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v9.4 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
