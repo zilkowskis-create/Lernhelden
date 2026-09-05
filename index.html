@@ -228,7 +228,7 @@ body.parent-open #parentPinBox{display:block}
    <div class="q" id="question">7 × 8 = ?</div>
    <input id="answer" class="answerInput" inputmode="numeric" pattern="[0-9]*" placeholder="?" onkeydown="if(event.key==='Enter')checkAnswer()">
    <button class="btn" id="checkBtn" onclick="checkAnswer()">Prüfen</button>
-   <button class="btn alt" id="nextBtn" style="display:none" onclick="nextTask()">Nächste Aufgabe →</button>
+   <button class="btn" id="nextBtn" style="display:none;background:#1976d2;color:#fff;font-size:1.12rem;padding:14px 22px;font-weight:700" onclick="nextTask()">Nächste Aufgabe →</button>
    <div id="feedback" class="feedback">Du schaffst das 💪</div>
  </div>
 </section>
@@ -429,7 +429,7 @@ function makeTask(){
  let a=rand(0,range),b=rand(0,a);return {a,b,ans:a-b,text:`${a} − ${b} = ?`,id:`minus_${range}_${a}_${b}`}
 }
 function startGame(){if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
-function nextTask(){if(mode==='ten'&&gameTotal>=10){finishGame();return}if(mode==='minute'&&Date.now()-startedAt>=60000){finishGame();return}answered=false;current=makeTask();question.textContent=current.text;question.classList.toggle('textq',op==='text');answer.value='';answer.disabled=false;answer.focus();checkBtn.style.display='block';nextBtn.style.display='none';feedback.className='feedback';feedback.textContent='Du schaffst das 💪';if(mode==='ten'){gameInfo.textContent=(gameTotal+1)+' / 10';gameBar.style.width=(gameTotal/10*100)+'%'}else if(mode==='practice'){gameInfo.textContent=gameCorrect+' richtig';gameBar.style.width='0'}}
+function nextTask(){if(mathAutoNext){clearTimeout(mathAutoNext);mathAutoNext=null;}if(mode==='ten'&&gameTotal>=10){finishGame();return}if(mode==='minute'&&Date.now()-startedAt>=60000){finishGame();return}answered=false;current=makeTask();question.textContent=current.text;question.classList.toggle('textq',op==='text');answer.value='';answer.disabled=false;answer.focus();checkBtn.style.display='block';nextBtn.style.display='none';feedback.className='feedback';feedback.textContent='Du schaffst das 💪';if(mode==='ten'){gameInfo.textContent=(gameTotal+1)+' / 10';gameBar.style.width=(gameTotal/10*100)+'%'}else if(mode==='practice'){gameInfo.textContent=gameCorrect+' richtig';gameBar.style.width='0'}}
 
 function playApplause(){
  try{
@@ -448,18 +448,22 @@ function playApplause(){
  }catch(e){}
 }
 
-function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';nextBtn.style.display='block';feedback.className='feedback '+(ok?'ok':'bad');
+function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';feedback.className='feedback '+(ok?'ok':'bad');
  if(ok){
-   feedback.textContent='👏 Super! Richtig! +3 Sterne';
+   feedback.textContent='👏 Super! Richtig! +3 Sterne – nächste Aufgabe in 2 Sekunden';
+   nextBtn.style.display='none';
    celebrateCorrect();
+   mathAutoNext=setTimeout(()=>{mathAutoNext=null;nextTask()},2000);
  }else{
    if(op==='text' && current.explanation){
      feedback.innerHTML=`Noch nicht ganz. <b>Richtig ist ${current.ans}.</b><br><br>${current.explanation}<br><span class="muted">+1 Stern fürs Üben</span>`;
    }else{
      feedback.textContent=`Noch nicht ganz. Richtig ist ${current.ans}. +1 Stern fürs Üben`;
    }
+   nextBtn.style.display='block';
+   if(mode==='ten'&&gameTotal>=10)nextBtn.textContent='Ergebnis ansehen →';else nextBtn.textContent='Nächste Aufgabe →';
  }
- refresh();if(mode==='ten'&&gameTotal>=10)nextBtn.textContent='Ergebnis ansehen →';else nextBtn.textContent='Nächste Aufgabe →'}
+ refresh()}
 function finishGame(){if(timer)clearInterval(timer);timer=null;question.classList.remove('textq');question.textContent='Geschafft! 🎉';answer.style.display='none';checkBtn.style.display='none';nextBtn.style.display='none';feedback.className='feedback ok';feedback.innerHTML=`<b>${gameCorrect} von ${gameTotal}</b> richtig.<br>${gameTotal?Math.round(gameCorrect/gameTotal*100):0}% Trefferquote`;gameInfo.textContent='Fertig';gameBar.style.width='100%';setTimeout(()=>answer.style.display='block',100)}
 function weakest(d){let arr=Object.entries(d.tables).filter(([k,v])=>v.total>=2).map(([k,v])=>({k,rate:v.correct/v.total})).sort((a,b)=>a.rate-b.rate);return arr.length?arr[0].k+'er':'–'}
 function refresh(){let d=data(),r=d.total?Math.round(d.correct/d.total*100):0;hello.textContent='Hallo '+kid().name+' 👋';stars.textContent=d.stars+' ⭐';total.textContent=d.total;rate.textContent=r+'%';pstars.textContent=d.stars+' ⭐';ptotal.textContent=d.total;prate.textContent=r+'%';parTotal.textContent=d.total;parRate.textContent=r+'%';parWeak.textContent=weakest(d);parentName.textContent='Lernstand '+kid().name;mastery.innerHTML='';for(let i=1;i<=10;i++){let t=d.tables[i],icon='⚪',pct='';if(t&&t.total){let rr=t.correct/t.total;icon=rr>=.85&&t.total>=5?'⭐':rr>=.6?'🟡':'🟠';pct=Math.round(rr*100)+'%'}mastery.innerHTML+=`<div class=master><b>${icon} ${i}er</b>${pct||'neu'}</div>`}}
@@ -1232,7 +1236,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.8 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.9 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1373,7 +1377,7 @@ body.k4-open #klasse4Hub{display:block}
     <input id="k4Input" inputmode="decimal" placeholder="Antwort eingeben" style="display:none">
     <button id="k4Check" style="display:none;margin-top:10px" onclick="K4.checkInput()">Prüfen</button>
     <div id="k4Feedback"></div>
-    <button id="k4Next" style="display:none;margin-top:10px" onclick="K4.next()">Nächste Aufgabe</button>
+    <button id="k4Next" style="display:none;margin-top:14px;padding:14px 22px;border:none;border-radius:14px;background:#1976d2;color:#fff;font-size:1.12rem;font-weight:700" onclick="K4.next()">Nächste Aufgabe →</button>
   </div>
 </section>
 
@@ -1453,15 +1457,22 @@ window.K4=(function(){
  }
  function norm(x){return String(x).trim().toLowerCase().replace(',','.').replace(/\s+/g,' ')}
  function check(v){
-  const ok=norm(v)===norm(cur.a),F=document.getElementById('k4Feedback');
+  const ok=norm(v)===norm(cur.a),F=document.getElementById('k4Feedback'),N=document.getElementById('k4Next');
   F.style.display='block';
-  F.innerHTML=ok?'⭐ <b>Richtig!</b>':`💡 <b>Noch nicht.</b> Richtige Antwort: <b>${cur.a}</b><br>${cur.ex}`;
-  if(ok && typeof speakBravo==='function') try{speakBravo()}catch(e){}
-  document.getElementById('k4Next').style.display='inline-block';
+  if(ok){
+    F.innerHTML='⭐ <b>Richtig!</b><br><span style="opacity:.75">Nächste Aufgabe in 2 Sekunden …</span>';
+    N.style.display='none';
+    if(typeof speakBravo==='function')try{speakBravo()}catch(e){}
+    if(k4AutoNext)clearTimeout(k4AutoNext);
+    k4AutoNext=setTimeout(()=>{k4AutoNext=null;K4.next()},2000);
+  }else{
+    F.innerHTML=`💡 <b>Noch nicht.</b> Richtige Antwort: <b>${cur.a}</b><br>${cur.ex}`;
+    N.style.display='inline-block';
+  }
  }
  return{
   start(m){mode=m;document.body.classList.add('k4-open');cur=m==='math'?mathTask():germanTask();render();document.getElementById('klasse4Hub').scrollIntoView({behavior:'smooth'})},
-  next(){cur=mode==='math'?mathTask():germanTask();render()},
+  next(){if(k4AutoNext){clearTimeout(k4AutoNext);k4AutoNext=null;}cur=mode==='math'?mathTask():germanTask();render()},
   checkInput(){check(document.getElementById('k4Input').value)}
  }
 })();
