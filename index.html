@@ -256,7 +256,7 @@ body.parent-open #parentPinBox{display:block}
   <div class="q textq" id="lgQuestion"></div>
   <div id="lgAnswers"></div>
   <div id="lgFeedback" class="feedback">Wähle die richtige Antwort ✨</div>
-  <button id="lgNext" class="btn alt" style="display:none" onclick="nextLangTask()">Nächste Aufgabe →</button>
+  <button id="lgNext" class="btn" style="display:none;background:#1976d2;color:white;font-size:1.08rem;padding:14px 18px" onclick="nextLangTask()">Nächste Aufgabe →</button>
  </div>
 </section>
 
@@ -465,7 +465,7 @@ function weakest(d){let arr=Object.entries(d.tables).filter(([k,v])=>v.total>=2)
 function refresh(){let d=data(),r=d.total?Math.round(d.correct/d.total*100):0;hello.textContent='Hallo '+kid().name+' 👋';stars.textContent=d.stars+' ⭐';total.textContent=d.total;rate.textContent=r+'%';pstars.textContent=d.stars+' ⭐';ptotal.textContent=d.total;prate.textContent=r+'%';parTotal.textContent=d.total;parRate.textContent=r+'%';parWeak.textContent=weakest(d);parentName.textContent='Lernstand '+kid().name;mastery.innerHTML='';for(let i=1;i<=10;i++){let t=d.tables[i],icon='⚪',pct='';if(t&&t.total){let rr=t.correct/t.total;icon=rr>=.85&&t.total>=5?'⭐':rr>=.6?'🟡':'🟠';pct=Math.round(rr*100)+'%'}mastery.innerHTML+=`<div class=master><b>${icon} ${i}er</b>${pct||'neu'}</div>`}}
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langStart=0, langLocked=false;
+let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false;
 
 const DE = {
  nouns:['Hund','Schule','Baum','Freund','Tisch','Katze','Buch','Blume','Haus','Kind','Ball','Lehrerin','Fahrrad','Wasser','Sonne'],
@@ -482,7 +482,21 @@ function openLang(l){lang=l;langTopic='mixed';show('language');langTitle.textCon
 function renderLangTopics(){
  const topics=lang==='de'?[['mixed','🔀 Gemischt'],['nouns','🔵 Nomen'],['verbs','🔴 Verben'],['adjectives','🟢 Adjektive']]:[['mixed','🔀 Mixed'],['vocab','💬 Vokabeln'],['nouns','🔵 Nouns'],['verbs','🔴 Verbs'],['adjectives','🟢 Adjectives']];
  langTopics.innerHTML='';
- topics.forEach((x,i)=>{let b=document.createElement('button');b.className='mode'+(i===0?' selected':'');b.textContent=x[1];b.onclick=()=>{document.querySelectorAll('#langTopics .mode').forEach(z=>z.classList.remove('selected'));b.classList.add('selected');langTopic=x[0]};langTopics.appendChild(b)})
+ topics.forEach((x,i)=>{let b=document.createElement('button');b.className='mode'+(i===0?' selected':'');b.textContent=x[1];b.onclick=()=>{document.querySelectorAll('#langTopics .mode').forEach(z=>z.classList.remove('selected'));b.classList.add('selected');langTopic=x[0]};langTopics.appendChild(b)});
+ if(lang==='de'){
+   let sep=document.createElement('div');
+   sep.style.flexBasis='100%';
+   sep.innerHTML='<div style="margin-top:10px;font-weight:800;color:#4d5870">Zusätzlich</div>';
+   langTopics.appendChild(sep);
+   let rs=document.createElement('button');
+   rs.className='mode';
+   rs.style.background='#eef5ff';
+   rs.style.borderColor='#9fc4ff';
+   rs.style.color='#1557a8';
+   rs.textContent='✍️ Richtig schreiben';
+   rs.onclick=()=>V82.open('write');
+   langTopics.appendChild(rs);
+ }
 }
 function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
 function shuffled(a){return [...a].sort(()=>Math.random()-.5)}
@@ -503,11 +517,18 @@ function vocabTask(){
 }
 function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():wordTypeTask()}
 function startLangGame(){if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
-function nextLangTask(){if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
+function nextLangTask(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
 function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');
- if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex;celebrateCorrect();}
+ if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex+' – nächste Aufgabe in 2 Sekunden';celebrateCorrect();}
  else{lgFeedback.textContent='Noch nicht ganz. '+window._lt.ex;}
- lgNext.style.display='block';let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;save(d);refresh();if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →'}
+ let d=data();d.total++;if(ok){d.correct++;d.stars+=3}else d.stars+=1;save(d);refresh();
+ if(ok){
+   lgNext.style.display='none';
+   langAutoNext=setTimeout(()=>{langAutoNext=null;nextLangTask()},2000);
+ }else{
+   lgNext.style.display='block';
+   if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →';
+ }}
 function finishLang(){if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
 
 renderKids();renderTables();refresh();
@@ -1211,7 +1232,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.5 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.6 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1469,7 +1490,6 @@ const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,P=a=>a[Math.floor(Math.random
 let area='',topic='',cur,autoTimer=null,answered=false;
 const mainMath={times:'× Multiplikation',divide:'÷ Division',plus:'+ Addition',minus:'− Subtraktion',text:'📝 Textaufgaben',grade4:'🎒 Mathe 4. Klasse'};
 const grade4={written:'Schriftlich rechnen',numbers:'Zahlen bis 1.000',semi:'Halbschriftlich rechnen',sizes:'Größen',time:'Zeit',charts:'Diagramme',patterns:'Muster & Geometrie',stories:'Sachaufgaben 4. Klasse',mixed:'🔀 Alles gemischt'};
-const de={old:'📚 Bisherige Deutschübungen',write:'✍️ Richtig schreiben'};
 const writing={memory:'Merkwörter',blocks:'Wortbausteine',extend:'Verlängern & Ableiten',case:'Groß / Klein',punct:'Satzzeichen',vowels:'Kurze & lange Vokale',grammar:'Grammatik',tenses:'Zeitformen',mixedde:'🔀 Gemischt'};
 function menu(obj){document.getElementById('v82menu').innerHTML=Object.entries(obj).map(([k,v])=>`<button class="v82btn" onclick="V82.pick('${k}')"><b>${v}</b></button>`).join('');document.getElementById('v82game').style.display='none'}
 function open(a){
@@ -1477,14 +1497,14 @@ function open(a){
  document.getElementById('v82').style.display='block';
  if(a==='g4menu'){area='g4';title('🎒 Mathe 4. Klasse');menu(grade4);return}
  if(a==='lang'){title('🌍 Sprachen');menu({de:'🇩🇪 Deutsch',en:'🇬🇧 Englisch'});return}
+ if(a==='write'){area='write';title('✍️ Richtig schreiben');menu(writing);return}
  if(a==='math'){title('➗ Mathe');menu(mainMath);return}
 }
 function title(x){document.getElementById('v82title').textContent=x}
 function pick(k){
  if(k==='grade4'){area='g4';title('🎒 Mathe 4. Klasse');menu(grade4);return}
- if(area==='lang'&&k==='de'){area='de';title('🇩🇪 Deutsch');menu(de);return}
+ if(area==='lang'&&k==='de'){close();openLang('de');return}
  if(area==='lang'&&k==='en'){close();openLang('en');return}
- if(area==='de'&&k==='old'){close();openLang('de');return}
  if(area==='de'&&k==='write'){area='write';title('✍️ Richtig schreiben');menu(writing);return}
  topic=k;cur=task();render()
 }
