@@ -173,6 +173,7 @@ body.parent-open #parentPinBox{display:block}
     <button class="op" data-op="-" onclick="pickOp(this)">−</button>
     <button class="op" data-op="text" onclick="pickOp(this)">📝</button>
    </div>
+   <button class="btn alt" style="margin-top:12px" onclick="V82.open('g4menu')">🎒 Mathe 4. Klasse</button>
    <div id="tableArea">
     <div class="title">Welche Reihe?</div>
     <div class="tables" id="tables"></div>
@@ -298,7 +299,7 @@ body.parent-open #parentPinBox{display:block}
 <nav class="bottom">
 <button class="nav active" data-s="home" onclick="show('home')"><span>🏠</span>Start</button>
 <button class="nav" data-s="math" onclick="show('math')"><span>🏆</span>Mathe</button>
-<button class="nav" data-s="language" onclick="openLang('de')"><span>📚</span>Sprachen</button>
+<button class="nav" data-s="language" onclick="V82.open('lang')"><span>📚</span>Sprachen</button>
 <button class="nav" data-s="progressScreen" onclick="show('progressScreen')"><span>⭐</span>Erfolge</button>
 </nav>
 
@@ -1195,7 +1196,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.2 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v8.3 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1456,12 +1457,19 @@ const grade4={written:'Schriftlich rechnen',numbers:'Zahlen bis 1.000',semi:'Hal
 const de={old:'Bisherige Deutschübungen',write:'✍️ Richtig schreiben'};
 const writing={memory:'Merkwörter',blocks:'Wortbausteine',extend:'Verlängern & Ableiten',case:'Groß / Klein',punct:'Satzzeichen',vowels:'Kurze & lange Vokale',grammar:'Grammatik',tenses:'Zeitformen',mixedde:'🔀 Gemischt'};
 function menu(obj){document.getElementById('v82menu').innerHTML=Object.entries(obj).map(([k,v])=>`<button class="v82btn" onclick="V82.pick('${k}')"><b>${v}</b></button>`).join('');document.getElementById('v82game').style.display='none'}
-function open(a){area=a;document.getElementById('v82').style.display='block'; if(a==='math'){title('➗ Mathe');menu(mainMath)}else{title('🌍 Sprachen');menu({de:'🇩🇪 Deutsch',en:'🇬🇧 Englisch'})}}
+function open(a){
+ area=a;
+ document.getElementById('v82').style.display='block';
+ if(a==='g4menu'){area='g4';title('🎒 Mathe 4. Klasse');menu(grade4);return}
+ if(a==='lang'){title('🌍 Sprachen');menu({de:'🇩🇪 Deutsch',en:'🇬🇧 Englisch'});return}
+ if(a==='math'){title('➗ Mathe');menu(mainMath);return}
+}
 function title(x){document.getElementById('v82title').textContent=x}
 function pick(k){
  if(k==='grade4'){area='g4';title('🎒 Mathe 4. Klasse');menu(grade4);return}
  if(area==='lang'&&k==='de'){area='de';title('🇩🇪 Deutsch');menu(de);return}
- if(area==='lang'&&k==='en'){area='en';title('🇬🇧 Englisch');menu({vocab:'Vokabeln',nouns:'Nomen',verbs:'Verben',adjectives:'Adjektive',mixeden:'Gemischt'});return}
+ if(area==='lang'&&k==='en'){close();openLang('en');return}
+ if(area==='de'&&k==='old'){close();openLang('de');return}
  if(area==='de'&&k==='write'){area='write';title('✍️ Richtig schreiben');menu(writing);return}
  topic=k;cur=task();render()
 }
@@ -1496,8 +1504,15 @@ const deTasks={
 };
 function task(){
  if(area==='math')return basicMath(); if(area==='g4')return g4();
- if(area==='write'){if(topic==='mixedde')topic=P(Object.keys(writing).filter(x=>x!=='mixedde'));return deTasks[topic]()}
- if(area==='en'){let pairs=[['Haus','house'],['Hund','dog'],['Buch','book'],['Schule','school'],['spielen','play'],['lernen','learn'],['schnell','fast']];let w=P(pairs);return mc('Englisch',`Was heißt „${w[0]}“?`,w[1],[w[1],P(pairs)[1],P(pairs)[1]],'Präge dir das Wortpaar ein.')}
+ if(area==='write'){
+   const chosen = topic==='mixedde' ? P(Object.keys(writing).filter(x=>x!=='mixedde')) : topic;
+   return deTasks[chosen]();
+ }
+ if(area==='en'){
+   let pairs=[['Haus','house'],['Hund','dog'],['Buch','book'],['Schule','school'],['spielen','play'],['lernen','learn'],['schnell','fast']];
+   let w=P(pairs), wrong=pairs.filter(x=>x[1]!==w[1]).map(x=>x[1]);
+   return mc('Englisch',`Was heißt „${w[0]}“?`,w[1],[w[1],...S(wrong).slice(0,2)],'Präge dir das Wortpaar ein.');
+ }
  return mc('Deutsch','Welche Wortart ist „laufen“?','Verb',['Nomen','Verb','Adjektiv'],'„laufen“ bezeichnet eine Tätigkeit.')
 }
 function render(){document.getElementById('v82game').style.display='block';document.getElementById('v82topic').textContent=cur.t;document.getElementById('v82q').textContent=cur.q;let A=document.getElementById('v82ans'),I=document.getElementById('v82input'),C=document.getElementById('v82check'),F=document.getElementById('v82fb'),N=document.getElementById('v82next');A.innerHTML='';F.style.display=N.style.display='none';I.value='';if(cur.o){I.style.display=C.style.display='none';cur.o.forEach(x=>{let b=document.createElement('button');b.textContent=x;b.onclick=()=>check(x);A.appendChild(b)})}else{I.style.display='block';C.style.display='inline-block'}}
@@ -1505,7 +1520,7 @@ function norm(x){return String(x).trim().toLowerCase().replace(',','.').replace(
 function check(v){let ok=norm(v)===norm(cur.a),F=document.getElementById('v82fb');F.style.display='block';F.innerHTML=ok?'⭐ <b>Richtig!</b>':`💡 <b>Noch nicht.</b> Richtig: <b>${cur.a}</b><br>${cur.e}`;document.getElementById('v82next').style.display='inline-block';if(ok&&typeof speakBravo==='function')try{speakBravo()}catch(e){}}
 return{open,pick,next(){cur=task();render()},checkInput(){check(document.getElementById('v82input').value)},close(){document.getElementById('v82').style.display='none'}}
 })();
-document.addEventListener('click',e=>{let b=e.target.closest('button,.card,.subject-card,[role="button"]');if(!b||b.closest('#v82'))return;let t=(b.innerText||'').trim().toLowerCase();if(t==='mathe'||t.startsWith('mathe\\n')){e.preventDefault();e.stopImmediatePropagation();V82.open('math')}else if(t==='sprachen'||t.startsWith('sprachen\\n')){e.preventDefault();e.stopImmediatePropagation();V82.open('lang')}},true);
+
 </script>
 
 </body></html>
