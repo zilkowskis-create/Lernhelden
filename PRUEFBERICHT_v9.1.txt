@@ -1,0 +1,53 @@
+Lernhelden v9.1 – Vollprüfung
+
+Automatisierte Prüfungen: 40/40 bestanden
+Fehler: 0
+
+Bei der Codeprüfung zusätzlich korrigiert:
+- K4-Auto-Weiter-Timer deklariert.
+- K4 und Richtig schreiben verwenden jetzt die echte Bravo-/Erfolgsfunktion.
+- Nachbarzehner/Nachbarhunderter für exakte Zehner/Hunderter korrigiert.
+- Schriftliche Addition bleibt im Zahlenraum bis 1.000.
+- Auto-Weiter-Timer werden beim Beenden/Schließen sauber gelöscht.
+
+Prüfergebnisse:
+✓ Keine doppelten HTML-IDs
+✓ Alle PWA-Dateien vorhanden
+✓ manifest.webmanifest ist gültiges JSON
+✓ version.json ist gültiges JSON
+✓ Inline-JS 1/17 Syntax
+✓ Inline-JS 2/17 Syntax
+✓ Inline-JS 3/17 Syntax
+✓ Inline-JS 4/17 Syntax
+✓ Inline-JS 5/17 Syntax
+✓ Inline-JS 6/17 Syntax
+✓ Inline-JS 7/17 Syntax
+✓ Inline-JS 8/17 Syntax
+✓ Inline-JS 9/17 Syntax
+✓ Inline-JS 10/17 Syntax
+✓ Inline-JS 11/17 Syntax
+✓ Inline-JS 12/17 Syntax
+✓ Inline-JS 13/17 Syntax
+✓ Inline-JS 14/17 Syntax
+✓ Inline-JS 15/17 Syntax
+✓ Inline-JS 16/17 Syntax
+✓ Inline-JS 17/17 Syntax
+✓ sw.js Syntax
+✓ config.js Syntax
+✓ Mathe Prüfen verdrahtet
+✓ Mathe richtig → 2 Sekunden
+✓ Mathe falsch → Button
+✓ Deutsch/Englisch richtig → 2 Sekunden
+✓ Deutsch/Englisch falsch → Button
+✓ Mathe 4 richtig → 2 Sekunden
+✓ Richtig schreiben richtig → 2 Sekunden
+✓ K4 Timer korrekt deklariert
+✓ Kinder-Bravo aktiv
+✓ K4/V82 verwenden echte Erfolgsfunktion
+✓ Deutsch/Englisch Auswahl vorhanden
+✓ Richtig schreiben separat vorhanden
+✓ K4 schließen löscht Timer
+✓ V82 schließen löscht Timer
+✓ Kein geheimer Schlüssel im Frontend
+✓ Supabase Publishable Key konfiguriert
+✓ Service-Worker Assets vorhanden

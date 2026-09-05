@@ -334,7 +334,7 @@ function loadAppProfiles(){
 }
 let defaultKids=loadAppProfiles();
 let currentKid=localStorage.getItem('lernhelden_active_profile_v1')||localStorage.getItem('lhKid')||(defaultKids[0]&&defaultKids[0].id)||'', op='*', range=20, mode='practice', difficulty='easy', selectedTables=[1], all=false;
-let current=null, answered=false, gameCorrect=0, gameTotal=0, startedAt=0, timer=null;
+let current=null, answered=false, gameCorrect=0, gameTotal=0, startedAt=0, timer=null, mathAutoNext=null;
 
 function key(){return 'lernhelden_'+currentKid}
 function data(){return JSON.parse(localStorage.getItem(key())||'{"total":0,"correct":0,"stars":0,"tables":{},"facts":{}}')}
@@ -428,7 +428,7 @@ function makeTask(){
  }
  let a=rand(0,range),b=rand(0,a);return {a,b,ans:a-b,text:`${a} − ${b} = ?`,id:`minus_${range}_${a}_${b}`}
 }
-function startGame(){if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
+function startGame(){if(mathAutoNext){clearTimeout(mathAutoNext);mathAutoNext=null;}if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}gameCorrect=0;gameTotal=0;startedAt=Date.now();answered=false;show('game');gameMode.textContent=mode==='practice'?'🧠 Üben':mode==='ten'?'🎯 10 Aufgaben':'⏱️ 1 Minute';if(timer)clearInterval(timer);if(mode==='minute'){timer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-startedAt)/1000));gameInfo.textContent=left+' s';gameBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(timer);finishGame()}},250)}nextTask()}
 function nextTask(){if(mathAutoNext){clearTimeout(mathAutoNext);mathAutoNext=null;}if(mode==='ten'&&gameTotal>=10){finishGame();return}if(mode==='minute'&&Date.now()-startedAt>=60000){finishGame();return}answered=false;current=makeTask();question.textContent=current.text;question.classList.toggle('textq',op==='text');answer.value='';answer.disabled=false;answer.focus();checkBtn.style.display='block';nextBtn.style.display='none';feedback.className='feedback';feedback.textContent='Du schaffst das 💪';if(mode==='ten'){gameInfo.textContent=(gameTotal+1)+' / 10';gameBar.style.width=(gameTotal/10*100)+'%'}else if(mode==='practice'){gameInfo.textContent=gameCorrect+' richtig';gameBar.style.width='0'}}
 
 function playApplause(){
@@ -464,7 +464,7 @@ function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer
    if(mode==='ten'&&gameTotal>=10)nextBtn.textContent='Ergebnis ansehen →';else nextBtn.textContent='Nächste Aufgabe →';
  }
  refresh()}
-function finishGame(){if(timer)clearInterval(timer);timer=null;question.classList.remove('textq');question.textContent='Geschafft! 🎉';answer.style.display='none';checkBtn.style.display='none';nextBtn.style.display='none';feedback.className='feedback ok';feedback.innerHTML=`<b>${gameCorrect} von ${gameTotal}</b> richtig.<br>${gameTotal?Math.round(gameCorrect/gameTotal*100):0}% Trefferquote`;gameInfo.textContent='Fertig';gameBar.style.width='100%';setTimeout(()=>answer.style.display='block',100)}
+function finishGame(){if(mathAutoNext){clearTimeout(mathAutoNext);mathAutoNext=null;}if(timer)clearInterval(timer);timer=null;question.classList.remove('textq');question.textContent='Geschafft! 🎉';answer.style.display='none';checkBtn.style.display='none';nextBtn.style.display='none';feedback.className='feedback ok';feedback.innerHTML=`<b>${gameCorrect} von ${gameTotal}</b> richtig.<br>${gameTotal?Math.round(gameCorrect/gameTotal*100):0}% Trefferquote`;gameInfo.textContent='Fertig';gameBar.style.width='100%';setTimeout(()=>answer.style.display='block',100)}
 function weakest(d){let arr=Object.entries(d.tables).filter(([k,v])=>v.total>=2).map(([k,v])=>({k,rate:v.correct/v.total})).sort((a,b)=>a.rate-b.rate);return arr.length?arr[0].k+'er':'–'}
 function refresh(){let d=data(),r=d.total?Math.round(d.correct/d.total*100):0;hello.textContent='Hallo '+kid().name+' 👋';stars.textContent=d.stars+' ⭐';total.textContent=d.total;rate.textContent=r+'%';pstars.textContent=d.stars+' ⭐';ptotal.textContent=d.total;prate.textContent=r+'%';parTotal.textContent=d.total;parRate.textContent=r+'%';parWeak.textContent=weakest(d);parentName.textContent='Lernstand '+kid().name;mastery.innerHTML='';for(let i=1;i<=10;i++){let t=d.tables[i],icon='⚪',pct='';if(t&&t.total){let rr=t.correct/t.total;icon=rr>=.85&&t.total>=5?'⭐':rr>=.6?'🟡':'🟠';pct=Math.round(rr*100)+'%'}mastery.innerHTML+=`<div class=master><b>${icon} ${i}er</b>${pct||'neu'}</div>`}}
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
@@ -520,7 +520,7 @@ function vocabTask(){
  return {q:forward?`Was heißt „${pair[0]}“ auf Englisch?`:`What does “${pair[1]}” mean in German?`,opts,ans:correct,ex:`${pair[0]} = ${pair[1]}`}
 }
 function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():wordTypeTask()}
-function startLangGame(){if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
+function startLangGame(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':'🇬🇧 English';if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
 function nextLangTask(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
 function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');
  if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex+' – nächste Aufgabe in 2 Sekunden';celebrateCorrect();}
@@ -533,7 +533,7 @@ function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let
    lgNext.style.display='block';
    if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →';
  }}
-function finishLang(){if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
+function finishLang(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
 
 renderKids();renderTables();refresh();
 </script>
@@ -1236,7 +1236,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v8.9 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v9.1 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1364,7 +1364,7 @@ body.k4-open #klasse4Hub{display:block}
   <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
     <div><h2 style="margin:0">🎒 4. Klasse – Intensiv üben</h2>
     <div class="muted">Aufgabentypen passend zu den fotografierten Übungsblättern – mit neuen Zahlen und Erklärungen.</div></div>
-    <button onclick="document.body.classList.remove('k4-open')">Schließen</button>
+    <button onclick="K4.close()">Schließen</button>
   </div>
   <div class="k4-grid">
     <button class="k4-topic" onclick="K4.start('math')"><b>➗ Mathe 4</b>Zahlenraum 1000, schriftlich rechnen, Sachaufgaben, Größen, Zeit, Diagramme</button>
@@ -1386,7 +1386,7 @@ window.K4=(function(){
  const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
  const P=a=>a[Math.floor(Math.random()*a.length)];
  const S=a=>a.slice().sort(()=>Math.random()-.5);
- let mode='math', cur=null;
+ let mode='math', cur=null, k4AutoNext=null;
 
  function mc(topic,q,a,opts,ex){return{topic,q,a:String(a),opts:S(opts.map(String)),ex}}
  function inp(topic,q,a,ex){return{topic,q,a:String(a),ex}}
@@ -1413,11 +1413,11 @@ window.K4=(function(){
 
  function mathTask(){
   const gens=[
-   ()=>{let a=R(120,699),b=R(100,299);return inp('Schriftlich addieren',`${a} + ${b} = ?`,a+b,'Addiere Einer, Zehner und Hunderter. Denke an mögliche Überträge.')},
+   ()=>{let a=R(120,699),b=R(100,Math.min(299,1000-a));return inp('Schriftlich addieren',`${a} + ${b} = ?`,a+b,'Addiere Einer, Zehner und Hunderter. Denke an mögliche Überträge.')},
    ()=>{let b=R(40,499),a=R(b+50,999);return inp('Schriftlich subtrahieren',`${a} − ${b} = ?`,a-b,'Rechne stellenweise von rechts nach links. Wenn nötig, entbündele einen Zehner oder Hunderter.')},
    ()=>{let n=R(101,998);return mc('Nachbarzahlen',`Welche Zahlen sind Vorgänger und Nachfolger von ${n}?`,`${n-1} und ${n+1}`,[`${n-1} und ${n+1}`,`${n-10} und ${n+10}`,`${n-100} und ${n+100}`],'Vorgänger ist 1 kleiner, Nachfolger ist 1 größer.')},
-   ()=>{let n=R(11,989);let lo=Math.floor(n/10)*10,hi=lo+10;return mc('Nachbarzehner',`Zwischen welchen Nachbarzehnern liegt ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${n-1} und ${n+1}`,`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`],'Nachbarzehner enden auf 0.')},
-   ()=>{let n=R(101,899);let lo=Math.floor(n/100)*100,hi=lo+100;return mc('Nachbarhunderter',`Zwischen welchen Nachbarhundertern liegt ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${Math.floor(n/10)*10} und ${Math.floor(n/10)*10+10}`,`${n-1} und ${n+1}`],'Nachbarhunderter sind die Hunderter direkt unter und über der Zahl.')},
+   ()=>{let n=R(11,989);let lo=Math.floor(n/10)*10;if(n%10===0)lo-=10;let hi=lo+20;return mc('Nachbarzehner',`Welche Nachbarzehner hat ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${n-1} und ${n+1}`,`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`],'Die Nachbarzehner sind der Zehner direkt darunter und direkt darüber.')},
+   ()=>{let n=R(101,899);let lo=Math.floor(n/100)*100;if(n%100===0)lo-=100;let hi=lo+200;return mc('Nachbarhunderter',`Welche Nachbarhunderter hat ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${Math.floor(n/10)*10} und ${Math.floor(n/10)*10+10}`,`${n-1} und ${n+1}`],'Die Nachbarhunderter liegen direkt unter und über der Zahl.')},
    ()=>{let n=R(101,999);let a=Math.round(n/10)*10;return inp('Runden auf Zehner',`Runde ${n} auf den nächsten Zehner.`,a,'Einer 0–4: abrunden. Einer 5–9: aufrunden.')},
    ()=>{let n=R(101,999);let a=Math.round(n/100)*100;return inp('Runden auf Hunderter',`Runde ${n} auf den nächsten Hunderter.`,a,'Die letzten zwei Ziffern 00–49: abrunden; 50–99: aufrunden.')},
    ()=>{let h=R(1,9),z=R(0,9),e=R(0,9),n=h*100+z*10+e;return inp('Stellenwert',`${h} Hunderter, ${z} Zehner und ${e} Einer ergeben welche Zahl?`,n,`${h}00 + ${z}0 + ${e} = ${n}.`)},
@@ -1462,7 +1462,7 @@ window.K4=(function(){
   if(ok){
     F.innerHTML='⭐ <b>Richtig!</b><br><span style="opacity:.75">Nächste Aufgabe in 2 Sekunden …</span>';
     N.style.display='none';
-    if(typeof speakBravo==='function')try{speakBravo()}catch(e){}
+    if(typeof celebrateCorrect==='function')try{celebrateCorrect()}catch(e){}
     if(k4AutoNext)clearTimeout(k4AutoNext);
     k4AutoNext=setTimeout(()=>{k4AutoNext=null;K4.next()},2000);
   }else{
@@ -1473,7 +1473,8 @@ window.K4=(function(){
  return{
   start(m){mode=m;document.body.classList.add('k4-open');cur=m==='math'?mathTask():germanTask();render();document.getElementById('klasse4Hub').scrollIntoView({behavior:'smooth'})},
   next(){if(k4AutoNext){clearTimeout(k4AutoNext);k4AutoNext=null;}cur=mode==='math'?mathTask():germanTask();render()},
-  checkInput(){check(document.getElementById('k4Input').value)}
+  checkInput(){check(document.getElementById('k4Input').value)},
+  close(){if(k4AutoNext){clearTimeout(k4AutoNext);k4AutoNext=null;}document.body.classList.remove('k4-open')}
  }
 })();
 </script>
@@ -1529,8 +1530,8 @@ function basicMath(){
 }
 function g4(t=topic){
  if(t==='mixed')t=P(Object.keys(grade4).filter(x=>x!=='mixed'));
- if(t==='written'){let add=Math.random()<.5,b=R(80,399),a=R(b+50,699);return add?inp('Schriftlich addieren',`${a} + ${b} = ?`,a+b,'Einer unter Einer; Überträge beachten.'):inp('Schriftlich subtrahieren',`${a} − ${b} = ?`,a-b,'Von rechts nach links rechnen und nötigenfalls entbündeln.')}
- if(t==='numbers'){let n=R(101,899),kind=R(1,3);if(kind===1)return inp('Runden',`Runde ${n} auf Hunderter.`,Math.round(n/100)*100,'00–49 abrunden, 50–99 aufrunden.');if(kind===2)return inp('Stellenwert',`Wie viele Zehner hat die Zahl ${n} insgesamt?`,Math.floor(n/10),'Teile die Zahl gedanklich durch 10.');return mc('Nachbarhunderter',`Zwischen welchen Hundertern liegt ${n}?`,`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`,[`${Math.floor(n/100)*100} und ${Math.floor(n/100)*100+100}`,`${n-1} und ${n+1}`,`${Math.floor(n/10)*10} und ${Math.floor(n/10)*10+10}`],'Suche den Hunderter darunter und darüber.')}
+ if(t==='written'){let add=Math.random()<.5,b=R(80,399),a=R(b+50,Math.min(699,1000-b));return add?inp('Schriftlich addieren',`${a} + ${b} = ?`,a+b,'Einer unter Einer; Überträge beachten.'):inp('Schriftlich subtrahieren',`${a} − ${b} = ?`,a-b,'Von rechts nach links rechnen und nötigenfalls entbündeln.')}
+ if(t==='numbers'){let n=R(101,899),kind=R(1,3);if(kind===1)return inp('Runden',`Runde ${n} auf Hunderter.`,Math.round(n/100)*100,'00–49 abrunden, 50–99 aufrunden.');if(kind===2)return inp('Stellenwert',`Wie viele Zehner hat die Zahl ${n} insgesamt?`,Math.floor(n/10),'Teile die Zahl gedanklich durch 10.');let lo=Math.floor(n/100)*100;if(n%100===0)lo-=100;let hi=lo+200;return mc('Nachbarhunderter',`Welche Nachbarhunderter hat ${n}?`,`${lo} und ${hi}`,[`${lo} und ${hi}`,`${n-1} und ${n+1}`,`${Math.floor(n/10)*10} und ${Math.floor(n/10)*10+10}`],'Suche den Hunderter direkt darunter und direkt darüber.')}
  if(t==='semi'){let a=R(2,9),b=R(21,89);return inp('Halbschriftlich multiplizieren',`${a} · ${b} = ?`,a*b,`Zerlege ${b} in Zehner und Einer.`)}
  if(t==='sizes'){if(Math.random()<.5){let cm=R(101,899);return inp('Längen',`${cm} cm = wie viele mm?`,cm*10,'1 cm = 10 mm.')}let g=R(100,950);return inp('Gewichte',`Wie viele Gramm fehlen von ${g} g bis 1 kg?`,1000-g,'1 kg = 1000 g.')}
  if(t==='time'){let h=R(1,5),m=P([0,15,30,45]);return inp('Zeit',`${h} h ${m} min = wie viele Minuten?`,h*60+m,'1 Stunde = 60 Minuten.')}
@@ -1605,14 +1606,14 @@ function check(v){
  if(ok){
    F.innerHTML='⭐ <b>Richtig!</b><br><span style="opacity:.75">Nächste Aufgabe in 2 Sekunden …</span>';
    N.style.display='none';
-   if(typeof speakBravo==='function')try{speakBravo()}catch(e){}
+   if(typeof celebrateCorrect==='function')try{celebrateCorrect()}catch(e){}
    autoTimer=setTimeout(()=>{autoTimer=null;V82.next()},2000);
  }else{
    F.innerHTML=`💡 <b>Noch nicht.</b> Richtig: <b>${cur.a}</b><br>${cur.e}`;
    N.style.display='inline-block';
  }
 }
-return{open,pick,next(){if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}cur=task();render()},checkInput(){check(document.getElementById('v82input').value)},close(){document.getElementById('v82').style.display='none'}}
+return{open,pick,next(){if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}cur=task();render()},checkInput(){check(document.getElementById('v82input').value)},close(){if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}document.getElementById('v82').style.display='none'}}
 })();
 
 </script>
