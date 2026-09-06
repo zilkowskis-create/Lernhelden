@@ -252,7 +252,17 @@ body.parent-open #parentPinBox{display:block}
   <div class="modes" id="langTopics"></div>
   <div id="vocabCategoryArea" class="langSubArea">
    <div class="title">Vokabel-Thema</div>
-   <div class="modes" id="vocabCategories"></div>
+   <div class="modes" id="vocabCategories">
+    <button type="button" class="mode selected" data-vocab="mixed" onclick="selectVocabCategory('mixed',this)">🔀 Alle Themen</button>
+    <button type="button" class="mode" data-vocab="colors" onclick="selectVocabCategory('colors',this)">🎨 Farben</button>
+    <button type="button" class="mode" data-vocab="animals" onclick="selectVocabCategory('animals',this)">🐶 Tiere</button>
+    <button type="button" class="mode" data-vocab="clothes" onclick="selectVocabCategory('clothes',this)">👕 Kleiderschrank</button>
+    <button type="button" class="mode" data-vocab="school" onclick="selectVocabCategory('school',this)">🎒 Schule</button>
+    <button type="button" class="mode" data-vocab="food" onclick="selectVocabCategory('food',this)">🍎 Essen & Trinken</button>
+    <button type="button" class="mode" data-vocab="family" onclick="selectVocabCategory('family',this)">👨‍👩‍👧 Familie</button>
+    <button type="button" class="mode" data-vocab="body" onclick="selectVocabCategory('body',this)">🖐️ Körper</button>
+    <button type="button" class="mode" data-vocab="home" onclick="selectVocabCategory('home',this)">🏠 Zuhause</button>
+   </div>
   </div>
   <div id="germanTopicArea" class="langSubArea">
    <div class="title" id="germanTopicTitle">Deutsch-Thema</div>
@@ -319,7 +329,7 @@ body.parent-open #parentPinBox{display:block}
       <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
   <div class="parent-time-grid" style="margin-top:10px">
-    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.6.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
+    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.8.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
   </div>
 
   <div class="setting-row">
@@ -363,6 +373,19 @@ body.parent-open #parentPinBox{display:block}
 </nav>
 
 <script>
+const LH_DOM_IDS=[
+ 'hello','kids','stars','total','rate','tableArea','tables','allTables','rangeArea','textArea',
+ 'gameMode','gameInfo','gameBar','answer','checkBtn','nextBtn','feedback',
+ 'pstars','ptotal','prate','mastery','parentName','parTotal','parRate','parWeak'
+];
+const LH_DOM={};
+LH_DOM_IDS.forEach(id=>LH_DOM[id]=document.getElementById(id));
+const {
+ hello,kids,stars,total,rate,tableArea,tables,allTables,rangeArea,textArea,
+ gameMode,gameInfo,gameBar,answer,checkBtn,nextBtn,feedback,
+ pstars,ptotal,prate,mastery,parentName,parTotal,parRate,parWeak
+}=LH_DOM;
+
 function loadAppProfiles(){
  try{
   const p=JSON.parse(localStorage.getItem('lernhelden_profiles_v1')||'[]');
@@ -602,7 +625,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='10.6.0', LH_APP_BUILD='2026-09-06';
+const LH_APP_VERSION='10.8.0', LH_APP_BUILD='2026-09-06';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -672,8 +695,8 @@ function setLangTopic(topic,button){
  if(button)button.classList.add('selected');
  const vocabArea=document.getElementById('vocabCategoryArea');
  const germanArea=document.getElementById('germanTopicArea');
- if(vocabArea)vocabArea.classList.remove('langSubAreaVisible');
- if(germanArea)germanArea.classList.remove('langSubAreaVisible');
+ if(vocabArea)vocabArea.style.display='none';
+ if(germanArea)germanArea.style.display='none';
  if(lang==='en'&&topic==='vocab'){
    vocabTopic='mixed';
    renderVocabCategories(true);
@@ -693,11 +716,11 @@ function renderLangTopics(){
  topicsBox.innerHTML='';
  const area=document.getElementById('vocabCategoryArea');
  const germanArea=document.getElementById('germanTopicArea');
- if(area)area.classList.remove('langSubAreaVisible');
- if(germanArea)germanArea.classList.remove('langSubAreaVisible');
+ if(area)area.style.display='none';
+ if(germanArea)germanArea.style.display='none';
 
  // Unterkategorien vorab aufbauen. Safari/iOS muss sie beim Antippen nur noch einblenden.
- if(lang==='en')renderVocabCategories(false);
+ if(lang==='en')renderVocabCategories(true);
  if(lang==='de')renderGermanTopicCategories('nouns',false);
 
  topics.forEach((x,i)=>{
@@ -706,10 +729,10 @@ function renderLangTopics(){
    b.className='mode'+(i===0?' selected':'');
    b.textContent=x[1];
    b.dataset.topic=x[0];
-   b.addEventListener('click',function(ev){
-     ev.preventDefault();
+   b.onclick=function(ev){
+     if(ev)ev.preventDefault();
      setLangTopic(this.dataset.topic,this);
-   });
+   };
    topicsBox.appendChild(b);
  });
 
@@ -722,33 +745,20 @@ function renderLangTopics(){
    topicsBox.appendChild(rs);
  }
 }
+function selectVocabCategory(topic,button){
+ vocabTopic=topic||'mixed';
+ document.querySelectorAll('#vocabCategories .mode').forEach(z=>z.classList.remove('selected'));
+ if(button)button.classList.add('selected');
+}
 function renderVocabCategories(showArea=true){
  const area=document.getElementById('vocabCategoryArea');
  const box=document.getElementById('vocabCategories');
  if(!area||!box)return;
- box.innerHTML='';
- const cats=[
-  ['mixed','🔀 Alle Themen'],['colors','🎨 Farben'],['animals','🐶 Tiere'],['clothes','👕 Kleiderschrank'],
-  ['school','🎒 Schule'],['food','🍎 Essen & Trinken'],['family','👨‍👩‍👧 Familie'],['body','🖐️ Körper'],['home','🏠 Zuhause']
- ];
- cats.forEach(x=>{
-   const b=document.createElement('button');
-   b.type='button';
-   b.className='mode'+(vocabTopic===x[0]?' selected':'');
-   b.textContent=x[1];
-   b.dataset.vocab=x[0];
-   b.addEventListener('click',function(ev){
-     ev.preventDefault();
-     document.querySelectorAll('#vocabCategories .mode').forEach(z=>z.classList.remove('selected'));
-     this.classList.add('selected');
-     vocabTopic=this.dataset.vocab;
-   });
-   box.appendChild(b);
- });
- if(showArea)area.classList.add('langSubAreaVisible');
- else area.classList.remove('langSubAreaVisible');
+ area.style.display=showArea?'block':'none';
+ const active=box.querySelector('[data-vocab="'+vocabTopic+'"]')||box.querySelector('[data-vocab="mixed"]');
+ box.querySelectorAll('.mode').forEach(z=>z.classList.remove('selected'));
+ if(active)active.classList.add('selected');
 }
-
 function renderGermanTopicCategories(topic,showArea=true){
  const area=document.getElementById('germanTopicArea');
  const box=document.getElementById('germanTopicCategories');
@@ -777,8 +787,7 @@ function renderGermanTopicCategories(topic,showArea=true){
    });
    box.appendChild(b);
  });
- if(showArea)area.classList.add('langSubAreaVisible');
- else area.classList.remove('langSubAreaVisible');
+ area.style.display=showArea?'block':'none';
 }
 
 function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
