@@ -1,4 +1,4 @@
-const CACHE='lernhelden-v10-1-final-clean';
+const CACHE='lernhelden-v10-3-deutsch-version';
 const CORE=['./','./index.html','./manifest.webmanifest','./config.js','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});

@@ -310,6 +310,9 @@ body.parent-open #parentPinBox{display:block}
   <div class="parent-time-grid" id="dynamicParentTimes">
       <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
+  <div class="parent-time-grid" style="margin-top:10px">
+    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.3.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
+  </div>
 
   <div class="setting-row">
     <div class="setting-copy">
@@ -591,6 +594,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
+const LH_APP_VERSION='10.3.0', LH_APP_BUILD='2026-09-06';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed';
 
 const DE = {
@@ -605,15 +609,26 @@ const EN = {
 };
 
 
+function updateVersionDisplay(){
+ const v=document.getElementById('appVersionDisplay'),b=document.getElementById('appBuildDisplay');
+ if(v)v.textContent='v'+LH_APP_VERSION;
+ if(b)b.textContent='Build '+LH_APP_BUILD;
+}
+
 function openLanguageChooser(){
   show('language');
-  langTitle.textContent='📚 Sprachen';
-  langIntro.textContent='Wähle Deutsch oder Englisch.';
-  langTopics.innerHTML='';
-  langGame.style.display='none';
-  lgFeedback.textContent='';
-  lgFeedback.className='feedback';
-  lgNext.style.display='none';
+  const title=document.getElementById('langTitle');
+  const intro=document.getElementById('langIntro');
+  const topicsBox=document.getElementById('langTopics');
+  const game=document.getElementById('langGame');
+  const feedback=document.getElementById('lgFeedback');
+  const next=document.getElementById('lgNext');
+  if(title) title.textContent='📚 Sprachen';
+  if(intro) intro.textContent='Wähle Deutsch oder Englisch.';
+  if(topicsBox) topicsBox.innerHTML='';
+  if(game) game.style.display='none';
+  if(feedback){feedback.textContent='';feedback.className='feedback';}
+  if(next) next.style.display='none';
 
   const de=document.createElement('button');
   de.className='mode';
@@ -625,17 +640,25 @@ function openLanguageChooser(){
   en.textContent='🇬🇧 Englisch';
   en.onclick=()=>openLang('en');
 
-  langTopics.appendChild(de);
-  langTopics.appendChild(en);
+  if(topicsBox){topicsBox.appendChild(de);topicsBox.appendChild(en);}
 }
 
-function openLang(l){lang=l;langTopic='mixed';show('language');langTitle.textContent=l==='de'?'🇩🇪 Deutsch':'🇬🇧 Englisch';langIntro.textContent=l==='de'?'Nomen, Verben und Adjektive sicher erkennen.':'Nouns, verbs, adjectives and vocabulary practice.';renderLangTopics()}
+function openLang(l){
+ lang=l;langTopic='mixed';show('language');
+ const title=document.getElementById('langTitle');
+ const intro=document.getElementById('langIntro');
+ if(title) title.textContent=l==='de'?'🇩🇪 Deutsch':'🇬🇧 Englisch';
+ if(intro) intro.textContent=l==='de'?'Nomen, Verben und Adjektive sicher erkennen.':'Nouns, verbs, adjectives and vocabulary practice.';
+ renderLangTopics();
+}
 function renderLangTopics(){
  const topics=lang==='de'
    ?[['mixed','🔀 Gemischt'],['nouns','🔵 Nomen'],['verbs','🔴 Verben'],['adjectives','🟢 Adjektive']]
    :[['mixed','🔀 Mixed'],['vocab','💬 Vokabeln'],['nouns','🔵 Nouns'],['verbs','🔴 Verbs'],['adjectives','🟢 Adjectives']];
 
- langTopics.innerHTML='';
+ const topicsBox=document.getElementById('langTopics');
+ if(!topicsBox) return;
+ topicsBox.innerHTML='';
  const area=document.getElementById('vocabCategoryArea');
  if(area)area.style.display='none';
 
@@ -650,7 +673,7 @@ function renderLangTopics(){
      if(lang==='en'&&langTopic==='vocab')renderVocabCategories();
      else if(area)area.style.display='none';
    };
-   langTopics.appendChild(b);
+   topicsBox.appendChild(b);
  });
 
  if(lang==='de'){
@@ -658,7 +681,7 @@ function renderLangTopics(){
    rs.className='mode';
    rs.textContent='✍️ Richtig schreiben';
    rs.onclick=()=>V82.open('write');
-   langTopics.appendChild(rs);
+   topicsBox.appendChild(rs);
  }
 }
 function renderVocabCategories(){
@@ -787,22 +810,39 @@ function vocabTask(){
 }
 
 function makeLangTask(){return lang==='en'&&langTopic==='vocab'?vocabTask():wordTypeTask()}
-function startLangGame(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');lgPill.textContent=lang==='de'?'🇩🇪 Deutsch':(langTopic==='vocab'?'🇬🇧 '+(vocabTopic==='mixed'?'Vocabulary':({colors:'Colors',animals:'Animals',clothes:'Wardrobe',school:'School',food:'Food',family:'Family',body:'Body',home:'Home'}[vocabTopic]||'Vocabulary')):'🇬🇧 English');if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));lgInfo.textContent=left+' s';lgBar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}nextLangTask()}
-function nextLangTask(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langMode==='ten'&&langTotal>=10){finishLang();return}if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}langLocked=false;lgNext.style.display='none';lgFeedback.className='feedback';lgFeedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';let t=makeLangTask();window._lt=t;lgQuestion.textContent=t.q;lgAnswers.innerHTML='';t.opts.forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);lgAnswers.appendChild(b)});if(langMode==='ten'){lgInfo.textContent=(langTotal+1)+' / 10';lgBar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){lgInfo.textContent=langCorrect+' richtig'}}
-function checkLang(btn,val){if(langLocked)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...lgAnswers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');lgFeedback.className='feedback '+(ok?'ok':'bad');
- if(ok){lgFeedback.textContent='👏 Super! '+window._lt.ex+' – nächste Aufgabe in 2 Sekunden';celebrateCorrect();}
- else{lgFeedback.textContent='Noch nicht ganz. '+window._lt.ex;}
- let d=data();progressInto(d,lang==='de'?'de':'en',(lang==='en'&&langTopic==='vocab')?('Vokabeln · '+(window._lt.category||vocabTopic)):langTopic,window._lt.q||lgQuestion.textContent,ok,val,window._lt.ans);save(d);refresh();
+function startLangGame(){
+ if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}
+ if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}
+ langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');
+ const pill=document.getElementById('lgPill'),info=document.getElementById('lgInfo'),bar=document.getElementById('lgBar');
+ if(pill) pill.textContent=lang==='de'?'🇩🇪 Deutsch':(langTopic==='vocab'?'🇬🇧 '+(vocabTopic==='mixed'?'Vocabulary':({colors:'Colors',animals:'Animals',clothes:'Wardrobe',school:'School',food:'Food',family:'Family',body:'Body',home:'Home'}[vocabTopic]||'Vocabulary')):'🇬🇧 English');
+ if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));if(info)info.textContent=left+' s';if(bar)bar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}
+ nextLangTask();
+}
+function nextLangTask(){
+ if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}
+ if(langMode==='ten'&&langTotal>=10){finishLang();return}
+ if(langMode==='minute'&&Date.now()-langStart>=60000){finishLang();return}
+ const next=document.getElementById('lgNext'),feedback=document.getElementById('lgFeedback'),question=document.getElementById('lgQuestion'),answers=document.getElementById('lgAnswers'),info=document.getElementById('lgInfo'),bar=document.getElementById('lgBar');
+ if(!question||!answers||!feedback) return;
+ langLocked=false;if(next)next.style.display='none';feedback.className='feedback';feedback.textContent=lang==='de'?'Wähle die richtige Antwort ✨':'Choose the correct answer ✨';
+ let t=makeLangTask();window._lt=t;question.textContent=t.q;answers.innerHTML='';
+ (t.opts||[]).forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);answers.appendChild(b)});
+ if(langMode==='ten'){if(info)info.textContent=(langTotal+1)+' / 10';if(bar)bar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){if(info)info.textContent=langCorrect+' richtig'}
+}
+function checkLang(btn,val){const answers=document.getElementById('lgAnswers'),feedback=document.getElementById('lgFeedback'),next=document.getElementById('lgNext'),question=document.getElementById('lgQuestion');if(langLocked||!answers||!feedback)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...answers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');feedback.className='feedback '+(ok?'ok':'bad');
+ if(ok){feedback.textContent='👏 Super! '+window._lt.ex+' – nächste Aufgabe in 2 Sekunden';celebrateCorrect();}
+ else{feedback.textContent='Noch nicht ganz. '+window._lt.ex;}
+ let d=data();progressInto(d,lang==='de'?'de':'en',(lang==='en'&&langTopic==='vocab')?('Vokabeln · '+(window._lt.category||vocabTopic)):langTopic,window._lt.q||(question?question.textContent:''),ok,val,window._lt.ans);save(d);refresh();
  if(ok){
-   lgNext.style.display='none';
+   if(next)next.style.display='none';
    langAutoNext=setTimeout(()=>{langAutoNext=null;nextLangTask()},2000);
  }else{
-   lgNext.style.display='block';
-   if(langMode==='ten'&&langTotal>=10)lgNext.textContent='Ergebnis ansehen →';else lgNext.textContent='Nächste Aufgabe →';
+   if(next){next.style.display='block';if(langMode==='ten'&&langTotal>=10)next.textContent='Ergebnis ansehen →';else next.textContent='Nächste Aufgabe →';}
  }}
-function finishLang(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langTimer)clearInterval(langTimer);langTimer=null;lgQuestion.textContent='Geschafft! 🎉';lgAnswers.innerHTML='';lgNext.style.display='none';lgFeedback.className='feedback ok';lgFeedback.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;lgInfo.textContent='Fertig';lgBar.style.width='100%'}
+function finishLang(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langTimer)clearInterval(langTimer);langTimer=null;const q=document.getElementById('lgQuestion'),a=document.getElementById('lgAnswers'),n=document.getElementById('lgNext'),f=document.getElementById('lgFeedback'),i=document.getElementById('lgInfo'),b=document.getElementById('lgBar');if(q)q.textContent='Geschafft! 🎉';if(a)a.innerHTML='';if(n)n.style.display='none';if(f){f.className='feedback ok';f.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;}if(i)i.textContent='Fertig';if(b)b.style.width='100%'}
 
-renderKids();renderTables();refresh();
+renderKids();renderTables();refresh();updateVersionDisplay();
 </script>
 
 <div id="installTip" style="display:none;position:fixed;left:12px;right:12px;bottom:92px;background:#fff;border-radius:18px;padding:14px;box-shadow:0 12px 35px rgba(32,35,58,.22);z-index:99">
