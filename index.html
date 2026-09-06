@@ -278,6 +278,38 @@ body.parent-open #parentPinBox{display:block}
  </div>
 </section>
 
+
+<section id="vocabMenu" class="screen">
+ <div class="hero">
+  <h1>🇬🇧 Englisch · Vokabeln</h1>
+  <p>Wähle ein Thema und starte direkt mit den Vokabeln.</p>
+ </div>
+ <div class="card">
+  <div class="title" style="margin-top:0">Vokabel-Thema</div>
+  <div class="modes" id="vocabMenuCategories">
+   <button type="button" class="mode selected" data-vocab-menu="mixed" onclick="pickVocabMenu('mixed',this)">🔀 Alle Themen</button>
+   <button type="button" class="mode" data-vocab-menu="colors" onclick="pickVocabMenu('colors',this)">🎨 Farben</button>
+   <button type="button" class="mode" data-vocab-menu="animals" onclick="pickVocabMenu('animals',this)">🐶 Tiere</button>
+   <button type="button" class="mode" data-vocab-menu="clothes" onclick="pickVocabMenu('clothes',this)">👕 Kleiderschrank</button>
+   <button type="button" class="mode" data-vocab-menu="school" onclick="pickVocabMenu('school',this)">🎒 Schule</button>
+   <button type="button" class="mode" data-vocab-menu="food" onclick="pickVocabMenu('food',this)">🍎 Essen & Trinken</button>
+   <button type="button" class="mode" data-vocab-menu="family" onclick="pickVocabMenu('family',this)">👨‍👩‍👧 Familie</button>
+   <button type="button" class="mode" data-vocab-menu="body" onclick="pickVocabMenu('body',this)">🖐️ Körper</button>
+   <button type="button" class="mode" data-vocab-menu="home" onclick="pickVocabMenu('home',this)">🏠 Zuhause</button>
+  </div>
+
+  <div class="title">Trainingsmodus</div>
+  <div class="modes">
+   <button class="mode vocabmode selected" data-vmode="practice" onclick="pickVocabMode(this)">🧠 Üben</button>
+   <button class="mode vocabmode" data-vmode="ten" onclick="pickVocabMode(this)">🎯 10 Aufgaben</button>
+   <button class="mode vocabmode" data-vmode="minute" onclick="pickVocabMode(this)">⏱️ 1 Minute</button>
+  </div>
+
+  <button class="btn" type="button" onclick="startVocabGame()">Vokabeln starten 🚀</button>
+  <button class="btn ghost" type="button" onclick="openLang('en')">← Zurück zu Englisch</button>
+ </div>
+</section>
+
 <section id="langGame" class="screen">
  <div class="card">
   <div style="display:flex;justify-content:space-between"><span class="pill" id="lgPill">Deutsch</span><b id="lgInfo"></b></div>
@@ -329,7 +361,7 @@ body.parent-open #parentPinBox{display:block}
       <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
   <div class="parent-time-grid" style="margin-top:10px">
-    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.8.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
+    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.9.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
   </div>
 
   <div class="setting-row">
@@ -625,7 +657,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='10.8.0', LH_APP_BUILD='2026-09-06';
+const LH_APP_VERSION='10.9.0', LH_APP_BUILD='2026-09-06';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -720,7 +752,7 @@ function renderLangTopics(){
  if(germanArea)germanArea.style.display='none';
 
  // Unterkategorien vorab aufbauen. Safari/iOS muss sie beim Antippen nur noch einblenden.
- if(lang==='en')renderVocabCategories(true);
+ if(lang==='en')renderVocabCategories(false);
  if(lang==='de')renderGermanTopicCategories('nouns',false);
 
  topics.forEach((x,i)=>{
@@ -731,6 +763,10 @@ function renderLangTopics(){
    b.dataset.topic=x[0];
    b.onclick=function(ev){
      if(ev)ev.preventDefault();
+     if(lang==='en' && this.dataset.topic==='vocab'){
+       openVocabMenu();
+       return;
+     }
      setLangTopic(this.dataset.topic,this);
    };
    topicsBox.appendChild(b);
@@ -788,6 +824,36 @@ function renderGermanTopicCategories(topic,showArea=true){
    box.appendChild(b);
  });
  area.style.display=showArea?'block':'none';
+}
+
+
+function openVocabMenu(){
+ lang='en';
+ langTopic='vocab';
+ vocabTopic='mixed';
+ langMode='practice';
+ document.querySelectorAll('#vocabMenuCategories .mode').forEach(b=>{
+   b.classList.toggle('selected',b.dataset.vocabMenu==='mixed');
+ });
+ document.querySelectorAll('.vocabmode').forEach((b,i)=>b.classList.toggle('selected',i===0));
+ show('vocabMenu');
+}
+function pickVocabMenu(topic,button){
+ vocabTopic=topic||'mixed';
+ document.querySelectorAll('#vocabMenuCategories .mode').forEach(b=>b.classList.remove('selected'));
+ if(button)button.classList.add('selected');
+}
+function pickVocabMode(button){
+ document.querySelectorAll('.vocabmode').forEach(b=>b.classList.remove('selected'));
+ if(button){
+   button.classList.add('selected');
+   langMode=button.dataset.vmode||'practice';
+ }
+}
+function startVocabGame(){
+ lang='en';
+ langTopic='vocab';
+ startLangGame();
 }
 
 function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
