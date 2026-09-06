@@ -114,6 +114,10 @@
 }
 .v82nextbtn:active{transform:scale(.98)}
 
+
+.langSubArea{display:none;margin-top:14px}
+.langSubArea.langSubAreaVisible{display:block}
+
 </style>
 <style>
 #profileSetupPanel{
@@ -246,11 +250,11 @@ body.parent-open #parentPinBox{display:block}
  <div class="card">
   <div class="title" style="margin-top:0">Was möchtest du üben?</div>
   <div class="modes" id="langTopics"></div>
-  <div id="vocabCategoryArea" style="display:none">
+  <div id="vocabCategoryArea" class="langSubArea">
    <div class="title">Vokabel-Thema</div>
    <div class="modes" id="vocabCategories"></div>
   </div>
-  <div id="germanTopicArea" style="display:none">
+  <div id="germanTopicArea" class="langSubArea">
    <div class="title" id="germanTopicTitle">Deutsch-Thema</div>
    <div class="modes" id="germanTopicCategories"></div>
   </div>
@@ -315,7 +319,7 @@ body.parent-open #parentPinBox{display:block}
       <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
   <div class="parent-time-grid" style="margin-top:10px">
-    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.5.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
+    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.6.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
   </div>
 
   <div class="setting-row">
@@ -598,7 +602,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='10.4.0', LH_APP_BUILD='2026-09-06';
+const LH_APP_VERSION='10.6.0', LH_APP_BUILD='2026-09-06';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -617,6 +621,13 @@ function updateVersionDisplay(){
  const v=document.getElementById('appVersionDisplay'),b=document.getElementById('appBuildDisplay');
  if(v)v.textContent='v'+LH_APP_VERSION;
  if(b)b.textContent='Build '+LH_APP_BUILD;
+ fetch('./version.json?ts='+Date.now(),{cache:'no-store'})
+   .then(r=>r.ok?r.json():Promise.reject())
+   .then(info=>{
+     if(v&&info.version)v.textContent='v'+info.version;
+     if(b&&info.build)b.textContent='Build '+info.build;
+   })
+   .catch(()=>{});
 }
 
 function openLanguageChooser(){
@@ -661,9 +672,10 @@ function setLangTopic(topic,button){
  if(button)button.classList.add('selected');
  const vocabArea=document.getElementById('vocabCategoryArea');
  const germanArea=document.getElementById('germanTopicArea');
- if(vocabArea){vocabArea.hidden=true;vocabArea.style.setProperty('display','none','important');}
- if(germanArea){germanArea.hidden=true;germanArea.style.setProperty('display','none','important');}
+ if(vocabArea)vocabArea.classList.remove('langSubAreaVisible');
+ if(germanArea)germanArea.classList.remove('langSubAreaVisible');
  if(lang==='en'&&topic==='vocab'){
+   vocabTopic='mixed';
    renderVocabCategories(true);
  }
  if(lang==='de'&&['nouns','verbs','adjectives'].includes(topic)){
@@ -681,8 +693,8 @@ function renderLangTopics(){
  topicsBox.innerHTML='';
  const area=document.getElementById('vocabCategoryArea');
  const germanArea=document.getElementById('germanTopicArea');
- if(area){area.hidden=true;area.style.setProperty('display','none','important');}
- if(germanArea){germanArea.hidden=true;germanArea.style.setProperty('display','none','important');}
+ if(area)area.classList.remove('langSubAreaVisible');
+ if(germanArea)germanArea.classList.remove('langSubAreaVisible');
 
  // Unterkategorien vorab aufbauen. Safari/iOS muss sie beim Antippen nur noch einblenden.
  if(lang==='en')renderVocabCategories(false);
@@ -733,10 +745,8 @@ function renderVocabCategories(showArea=true){
    });
    box.appendChild(b);
  });
- if(showArea){
-   area.hidden=false;
-   area.style.setProperty('display','block','important');
- }
+ if(showArea)area.classList.add('langSubAreaVisible');
+ else area.classList.remove('langSubAreaVisible');
 }
 
 function renderGermanTopicCategories(topic,showArea=true){
@@ -767,7 +777,8 @@ function renderGermanTopicCategories(topic,showArea=true){
    });
    box.appendChild(b);
  });
- if(showArea){area.hidden=false;area.style.setProperty('display','block','important');}
+ if(showArea)area.classList.add('langSubAreaVisible');
+ else area.classList.remove('langSubAreaVisible');
 }
 
 function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
