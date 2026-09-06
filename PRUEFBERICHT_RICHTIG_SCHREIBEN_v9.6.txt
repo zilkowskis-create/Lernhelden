@@ -1,0 +1,16 @@
+Lernhelden v9.6 – Aufgabenprüfung Richtig schreiben
+
+- Merkwörter: 15 Aufgaben
+- Wortbausteine: 15 Aufgaben
+- Verlängern & Ableiten: 15 Aufgaben
+- Groß / Klein: 15 Aufgaben
+- Satzzeichen: 15 Aufgaben
+- Kurze & lange Vokale: 27 Aufgaben
+- Grammatik: 18 Aufgaben
+- Zeitformen: 30 Aufgaben
+
+Zusätzlich:
+- direkte Wiederholung derselben Frage wird vermieden
+- falsche Antworten behalten die Erklärung
+- richtige Antworten wechseln nach 2 Sekunden automatisch weiter
+- alle 17 Inline-JavaScript-Blöcke ohne Syntaxfehler
