@@ -245,6 +245,76 @@ body.parent-open #parentPinBox{display:block}
 </section>
 
 
+
+<section id="germanMenu" class="screen">
+ <div class="hero">
+  <h1>🇩🇪 Deutsch</h1>
+  <p>Wähle direkt, was du üben möchtest.</p>
+ </div>
+
+ <div class="card">
+  <div class="title" style="margin-top:0">🔵 Nomen</div>
+  <div class="modes">
+   <button class="mode" type="button" onclick="startGermanTopic('nouns','mixed')">🔀 Gemischt</button>
+   <button class="mode" type="button" onclick="startGermanTopic('nouns','article')">🧩 Artikel</button>
+   <button class="mode" type="button" onclick="startGermanTopic('nouns','plural')">👥 Einzahl & Mehrzahl</button>
+  </div>
+
+  <div class="title">🔴 Verben</div>
+  <div class="modes">
+   <button class="mode" type="button" onclick="startGermanTopic('verbs','mixed')">🔀 Gemischt</button>
+   <button class="mode" type="button" onclick="startGermanTopic('verbs','present')">🕒 Präsens</button>
+   <button class="mode" type="button" onclick="startGermanTopic('verbs','base')">🔎 Grundform</button>
+  </div>
+
+  <div class="title">🟢 Adjektive</div>
+  <div class="modes">
+   <button class="mode" type="button" onclick="startGermanTopic('adjectives','mixed')">🔀 Gemischt</button>
+   <button class="mode" type="button" onclick="startGermanTopic('adjectives','opposite')">↔️ Gegenteile</button>
+   <button class="mode" type="button" onclick="startGermanTopic('adjectives','compare')">📈 Steigerung</button>
+  </div>
+
+  <div class="title">Weitere Übungen</div>
+  <div class="modes">
+   <button class="mode" type="button" onclick="startGermanTopic('mixed','mixed')">🎲 Wortarten gemischt</button>
+   <button class="mode" type="button" onclick="V82.open('write')">✍️ Richtig schreiben</button>
+  </div>
+
+  <button class="btn ghost" type="button" onclick="openLanguageChooser()">← Zurück</button>
+ </div>
+</section>
+
+<section id="englishMenu" class="screen">
+ <div class="hero">
+  <h1>🇬🇧 Englisch</h1>
+  <p>Wähle direkt eine Übung.</p>
+ </div>
+ <div class="card">
+  <div class="title" style="margin-top:0">💬 Vokabeln</div>
+  <div class="modes">
+   <button class="mode" type="button" onclick="startVocabTopic('mixed')">🔀 Alle Themen</button>
+   <button class="mode" type="button" onclick="startVocabTopic('colors')">🎨 Farben</button>
+   <button class="mode" type="button" onclick="startVocabTopic('animals')">🐶 Tiere</button>
+   <button class="mode" type="button" onclick="startVocabTopic('clothes')">👕 Kleiderschrank</button>
+   <button class="mode" type="button" onclick="startVocabTopic('school')">🎒 Schule</button>
+   <button class="mode" type="button" onclick="startVocabTopic('food')">🍎 Essen & Trinken</button>
+   <button class="mode" type="button" onclick="startVocabTopic('family')">👨‍👩‍👧 Familie</button>
+   <button class="mode" type="button" onclick="startVocabTopic('body')">🖐️ Körper</button>
+   <button class="mode" type="button" onclick="startVocabTopic('home')">🏠 Zuhause</button>
+  </div>
+
+  <div class="title">Wortarten</div>
+  <div class="modes">
+   <button class="mode" type="button" onclick="startEnglishTopic('mixed')">🔀 Mixed</button>
+   <button class="mode" type="button" onclick="startEnglishTopic('nouns')">🔵 Nouns</button>
+   <button class="mode" type="button" onclick="startEnglishTopic('verbs')">🔴 Verbs</button>
+   <button class="mode" type="button" onclick="startEnglishTopic('adjectives')">🟢 Adjectives</button>
+  </div>
+
+  <button class="btn ghost" type="button" onclick="openLanguageChooser()">← Zurück</button>
+ </div>
+</section>
+
 <section id="language" class="screen">
  <div class="hero"><h1 id="langTitle">🇩🇪 Deutsch</h1><p id="langIntro">Wortarten spielerisch erkennen und sicher anwenden.</p></div>
  <div class="card">
@@ -318,6 +388,7 @@ body.parent-open #parentPinBox{display:block}
   <div id="lgAnswers"></div>
   <div id="lgFeedback" class="feedback">Wähle die richtige Antwort ✨</div>
   <button id="lgNext" class="btn" style="display:none;background:#1976d2;color:white;font-size:1.08rem;padding:14px 18px" onclick="nextLangTask()">Nächste Aufgabe →</button>
+  <button class="btn ghost" type="button" onclick="backFromLangGame()">← Zurück zur Auswahl</button>
  </div>
 </section>
 
@@ -361,7 +432,7 @@ body.parent-open #parentPinBox{display:block}
       <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
   <div class="parent-time-grid" style="margin-top:10px">
-    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.9.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
+    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v11.0.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
   </div>
 
   <div class="setting-row">
@@ -657,7 +728,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='10.9.0', LH_APP_BUILD='2026-09-06';
+const LH_APP_VERSION='11.0.0', LH_APP_BUILD='2026-09-06';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -686,40 +757,62 @@ function updateVersionDisplay(){
 }
 
 function openLanguageChooser(){
-  show('language');
-  const title=document.getElementById('langTitle');
-  const intro=document.getElementById('langIntro');
-  const topicsBox=document.getElementById('langTopics');
-  const game=document.getElementById('langGame');
-  const feedback=document.getElementById('lgFeedback');
-  const next=document.getElementById('lgNext');
-  if(title) title.textContent='📚 Sprachen';
-  if(intro) intro.textContent='Wähle Deutsch oder Englisch.';
-  if(topicsBox) topicsBox.innerHTML='';
-  if(game) game.style.display='none';
-  if(feedback){feedback.textContent='';feedback.className='feedback';}
-  if(next) next.style.display='none';
-
-  const de=document.createElement('button');
-  de.className='mode';
-  de.textContent='🇩🇪 Deutsch';
-  de.onclick=()=>openLang('de');
-
-  const en=document.createElement('button');
-  en.className='mode';
-  en.textContent='🇬🇧 Englisch';
-  en.onclick=()=>openLang('en');
-
-  if(topicsBox){topicsBox.appendChild(de);topicsBox.appendChild(en);}
-}
-
-function openLang(l){
- lang=l;langTopic='mixed';show('language');
+ show('language');
  const title=document.getElementById('langTitle');
  const intro=document.getElementById('langIntro');
- if(title) title.textContent=l==='de'?'🇩🇪 Deutsch':'🇬🇧 Englisch';
- if(intro) intro.textContent=l==='de'?'Nomen, Verben und Adjektive sicher erkennen.':'Nouns, verbs, adjectives and vocabulary practice.';
- renderLangTopics();
+ const topicsBox=document.getElementById('langTopics');
+ const vocabArea=document.getElementById('vocabCategoryArea');
+ const germanArea=document.getElementById('germanTopicArea');
+ if(title)title.textContent='📚 Sprachen';
+ if(intro)intro.textContent='Wähle Deutsch oder Englisch.';
+ if(vocabArea)vocabArea.style.display='none';
+ if(germanArea)germanArea.style.display='none';
+ if(topicsBox){
+   topicsBox.innerHTML='';
+   const de=document.createElement('button');
+   de.type='button';
+   de.className='mode';
+   de.textContent='🇩🇪 Deutsch';
+   de.onclick=function(){openLang('de');};
+   const en=document.createElement('button');
+   en.type='button';
+   en.className='mode';
+   en.textContent='🇬🇧 Englisch';
+   en.onclick=function(){openLang('en');};
+   topicsBox.appendChild(de);
+   topicsBox.appendChild(en);
+ }
+}
+function openLang(l){
+ lang=l;
+ langTopic='mixed';
+ langMode='practice';
+ if(l==='de'){
+   show('germanMenu');
+ }else{
+   show('englishMenu');
+ }
+}
+function startGermanTopic(topic,subtopic){
+ lang='de';
+ langTopic=topic||'mixed';
+ deSubTopic=subtopic||'mixed';
+ langMode='practice';
+ startLangGame();
+}
+function startEnglishTopic(topic){
+ lang='en';
+ langTopic=topic||'mixed';
+ vocabTopic='mixed';
+ langMode='practice';
+ startLangGame();
+}
+function startVocabTopic(topic){
+ lang='en';
+ langTopic='vocab';
+ vocabTopic=topic||'mixed';
+ langMode='practice';
+ startLangGame();
 }
 function setLangTopic(topic,button){
  langTopic=topic;
@@ -990,6 +1083,11 @@ function checkLang(btn,val){const answers=document.getElementById('lgAnswers'),f
  }else{
    if(next){next.style.display='block';if(langMode==='ten'&&langTotal>=10)next.textContent='Ergebnis ansehen →';else next.textContent='Nächste Aufgabe →';}
  }}
+function backFromLangGame(){
+ if(langTimer){clearInterval(langTimer);langTimer=null;}
+ if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}
+ if(lang==='de')show('germanMenu'); else show('englishMenu');
+}
 function finishLang(){if(langAutoNext){clearTimeout(langAutoNext);langAutoNext=null;}if(langTimer)clearInterval(langTimer);langTimer=null;const q=document.getElementById('lgQuestion'),a=document.getElementById('lgAnswers'),n=document.getElementById('lgNext'),f=document.getElementById('lgFeedback'),i=document.getElementById('lgInfo'),b=document.getElementById('lgBar');if(q)q.textContent='Geschafft! 🎉';if(a)a.innerHTML='';if(n)n.style.display='none';if(f){f.className='feedback ok';f.innerHTML=`<b>${langCorrect} von ${langTotal}</b> richtig.<br>${langTotal?Math.round(langCorrect/langTotal*100):0}% Trefferquote`;}if(i)i.textContent='Fertig';if(b)b.style.width='100%'}
 
 renderKids();renderTables();refresh();updateVersionDisplay();
