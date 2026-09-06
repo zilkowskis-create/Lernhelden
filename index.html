@@ -250,6 +250,10 @@ body.parent-open #parentPinBox{display:block}
    <div class="title">Vokabel-Thema</div>
    <div class="modes" id="vocabCategories"></div>
   </div>
+  <div id="germanTopicArea" style="display:none">
+   <div class="title" id="germanTopicTitle">Deutsch-Thema</div>
+   <div class="modes" id="germanTopicCategories"></div>
+  </div>
   <div class="title">Trainingsmodus</div>
   <div class="modes">
    <button class="mode langmode selected" data-lmode="practice" onclick="pickLangMode(this)">🧠 Üben</button>
@@ -311,7 +315,7 @@ body.parent-open #parentPinBox{display:block}
       <div class="parent-time-card"><span>Noch kein Profil angelegt</span><strong>–</strong></div>
     </div>
   <div class="parent-time-grid" style="margin-top:10px">
-    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.3.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
+    <div class="parent-time-card"><span>📦 Installierte App-Version</span><strong id="appVersionDisplay">v10.5.0</strong><small id="appBuildDisplay" class="muted">Build 2026-09-06</small></div>
   </div>
 
   <div class="setting-row">
@@ -594,8 +598,8 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='10.3.0', LH_APP_BUILD='2026-09-06';
-let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed';
+const LH_APP_VERSION='10.4.0', LH_APP_BUILD='2026-09-06';
+let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
  nouns:['Hund','Schule','Baum','Freund','Tisch','Katze','Buch','Blume','Haus','Kind','Ball','Lehrerin','Fahrrad','Wasser','Sonne'],
@@ -651,6 +655,22 @@ function openLang(l){
  if(intro) intro.textContent=l==='de'?'Nomen, Verben und Adjektive sicher erkennen.':'Nouns, verbs, adjectives and vocabulary practice.';
  renderLangTopics();
 }
+function setLangTopic(topic,button){
+ langTopic=topic;
+ document.querySelectorAll('#langTopics .mode').forEach(z=>z.classList.remove('selected'));
+ if(button)button.classList.add('selected');
+ const vocabArea=document.getElementById('vocabCategoryArea');
+ const germanArea=document.getElementById('germanTopicArea');
+ if(vocabArea){vocabArea.hidden=true;vocabArea.style.setProperty('display','none','important');}
+ if(germanArea){germanArea.hidden=true;germanArea.style.setProperty('display','none','important');}
+ if(lang==='en'&&topic==='vocab'){
+   renderVocabCategories(true);
+ }
+ if(lang==='de'&&['nouns','verbs','adjectives'].includes(topic)){
+   deSubTopic='mixed';
+   renderGermanTopicCategories(topic,true);
+ }
+}
 function renderLangTopics(){
  const topics=lang==='de'
    ?[['mixed','🔀 Gemischt'],['nouns','🔵 Nomen'],['verbs','🔴 Verben'],['adjectives','🟢 Adjektive']]
@@ -660,50 +680,94 @@ function renderLangTopics(){
  if(!topicsBox) return;
  topicsBox.innerHTML='';
  const area=document.getElementById('vocabCategoryArea');
- if(area)area.style.display='none';
+ const germanArea=document.getElementById('germanTopicArea');
+ if(area){area.hidden=true;area.style.setProperty('display','none','important');}
+ if(germanArea){germanArea.hidden=true;germanArea.style.setProperty('display','none','important');}
+
+ // Unterkategorien vorab aufbauen. Safari/iOS muss sie beim Antippen nur noch einblenden.
+ if(lang==='en')renderVocabCategories(false);
+ if(lang==='de')renderGermanTopicCategories('nouns',false);
 
  topics.forEach((x,i)=>{
-   let b=document.createElement('button');
+   const b=document.createElement('button');
+   b.type='button';
    b.className='mode'+(i===0?' selected':'');
    b.textContent=x[1];
-   b.onclick=()=>{
-     document.querySelectorAll('#langTopics .mode').forEach(z=>z.classList.remove('selected'));
-     b.classList.add('selected');
-     langTopic=x[0];
-     if(lang==='en'&&langTopic==='vocab')renderVocabCategories();
-     else if(area)area.style.display='none';
-   };
+   b.dataset.topic=x[0];
+   b.addEventListener('click',function(ev){
+     ev.preventDefault();
+     setLangTopic(this.dataset.topic,this);
+   });
    topicsBox.appendChild(b);
  });
 
  if(lang==='de'){
-   let rs=document.createElement('button');
+   const rs=document.createElement('button');
+   rs.type='button';
    rs.className='mode';
    rs.textContent='✍️ Richtig schreiben';
-   rs.onclick=()=>V82.open('write');
+   rs.addEventListener('click',()=>V82.open('write'));
    topicsBox.appendChild(rs);
  }
 }
-function renderVocabCategories(){
- const area=document.getElementById('vocabCategoryArea'),box=document.getElementById('vocabCategories');
+function renderVocabCategories(showArea=true){
+ const area=document.getElementById('vocabCategoryArea');
+ const box=document.getElementById('vocabCategories');
  if(!area||!box)return;
- area.style.display='block';
  box.innerHTML='';
  const cats=[
   ['mixed','🔀 Alle Themen'],['colors','🎨 Farben'],['animals','🐶 Tiere'],['clothes','👕 Kleiderschrank'],
   ['school','🎒 Schule'],['food','🍎 Essen & Trinken'],['family','👨‍👩‍👧 Familie'],['body','🖐️ Körper'],['home','🏠 Zuhause']
  ];
  cats.forEach(x=>{
-   let b=document.createElement('button');
+   const b=document.createElement('button');
+   b.type='button';
    b.className='mode'+(vocabTopic===x[0]?' selected':'');
    b.textContent=x[1];
-   b.onclick=()=>{
+   b.dataset.vocab=x[0];
+   b.addEventListener('click',function(ev){
+     ev.preventDefault();
      document.querySelectorAll('#vocabCategories .mode').forEach(z=>z.classList.remove('selected'));
-     b.classList.add('selected');
-     vocabTopic=x[0];
-   };
+     this.classList.add('selected');
+     vocabTopic=this.dataset.vocab;
+   });
    box.appendChild(b);
  });
+ if(showArea){
+   area.hidden=false;
+   area.style.setProperty('display','block','important');
+ }
+}
+
+function renderGermanTopicCategories(topic,showArea=true){
+ const area=document.getElementById('germanTopicArea');
+ const box=document.getElementById('germanTopicCategories');
+ const title=document.getElementById('germanTopicTitle');
+ if(!area||!box)return;
+ const sets={
+   nouns:{title:'Nomen üben',items:[['mixed','🔀 Gemischt'],['article','🧩 Artikel'],['plural','👥 Einzahl & Mehrzahl']]},
+   verbs:{title:'Verben üben',items:[['mixed','🔀 Gemischt'],['present','🕒 Präsens'],['base','🔎 Grundform']]},
+   adjectives:{title:'Adjektive üben',items:[['mixed','🔀 Gemischt'],['opposite','↔️ Gegenteile'],['compare','📈 Steigerung']]}
+ };
+ const cfg=sets[topic];
+ if(!cfg)return;
+ if(title)title.textContent=cfg.title;
+ box.innerHTML='';
+ cfg.items.forEach(x=>{
+   const b=document.createElement('button');
+   b.type='button';
+   b.className='mode'+(deSubTopic===x[0]?' selected':'');
+   b.textContent=x[1];
+   b.dataset.deSub=x[0];
+   b.addEventListener('click',function(ev){
+     ev.preventDefault();
+     document.querySelectorAll('#germanTopicCategories .mode').forEach(z=>z.classList.remove('selected'));
+     this.classList.add('selected');
+     deSubTopic=this.dataset.deSub;
+   });
+   box.appendChild(b);
+ });
+ if(showArea){area.hidden=false;area.style.setProperty('display','block','important');}
 }
 
 function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
@@ -719,20 +783,20 @@ function wordTypeTask(){
    if(langTopic==='nouns'){
      const nouns=[['Hund','der','Hunde'],['Schule','die','Schulen'],['Baum','der','Bäume'],['Tisch','der','Tische'],['Katze','die','Katzen'],['Buch','das','Bücher'],['Blume','die','Blumen'],['Haus','das','Häuser'],['Kind','das','Kinder'],['Ball','der','Bälle']];
      const x=nouns[rand(0,nouns.length-1)];
-     if(Math.random()<.5) return {q:`Welcher Artikel passt zu „${x[0]}“?`,opts:shuffled(['der','die','das']),ans:x[1],ex:`Es heißt „${x[1]} ${x[0]}“.`};
+     if(deSubTopic==='article'||(deSubTopic==='mixed'&&Math.random()<.5)) return {q:`Welcher Artikel passt zu „${x[0]}“?`,opts:shuffled(['der','die','das']),ans:x[1],ex:`Es heißt „${x[1]} ${x[0]}“.`};
      const wrong=shuffled(nouns.map(n=>n[2]).filter(v=>v!==x[2])).slice(0,2);
      return {q:`Wie lautet der Plural von „${x[0]}“?`,opts:shuffled([x[2],...wrong]),ans:x[2],ex:`Der Plural von „${x[0]}“ ist „${x[2]}“.`};
    }
    if(langTopic==='verbs'){
      const verbs=[['laufen','läuft','lief'],['spielen','spielt','spielte'],['lesen','liest','las'],['schreiben','schreibt','schrieb'],['springen','springt','sprang'],['essen','isst','aß'],['trinken','trinkt','trank'],['schlafen','schläft','schlief']];
      const x=verbs[rand(0,verbs.length-1)];
-     if(Math.random()<.5){const wrong=shuffled(verbs.map(v=>v[1]).filter(v=>v!==x[1])).slice(0,2);return {q:`Setze richtig ein: „Er/Sie ___.” (${x[0]})`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`Im Präsens heißt es: er/sie ${x[1]}.`};}
+     if(deSubTopic==='present'||(deSubTopic==='mixed'&&Math.random()<.5)){const wrong=shuffled(verbs.map(v=>v[1]).filter(v=>v!==x[1])).slice(0,2);return {q:`Setze richtig ein: „Er/Sie ___.” (${x[0]})`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`Im Präsens heißt es: er/sie ${x[1]}.`};}
      const wrong=shuffled(verbs.map(v=>v[0]).filter(v=>v!==x[0])).slice(0,2);return {q:`Wie lautet die Grundform von „${x[2]}“?`,opts:shuffled([x[0],...wrong]),ans:x[0],ex:`„${x[2]}“ gehört zum Verb „${x[0]}“.`};
    }
    if(langTopic==='adjectives'){
      const adj=[['groß','klein','größer'],['schnell','langsam','schneller'],['laut','leise','lauter'],['warm','kalt','wärmer'],['hell','dunkel','heller'],['stark','schwach','stärker']];
      const x=adj[rand(0,adj.length-1)];
-     if(Math.random()<.5){const wrong=shuffled(adj.flatMap(a=>[a[0],a[1]]).filter(v=>v!==x[1]&&v!==x[0])).slice(0,2);return {q:`Was ist das Gegenteil von „${x[0]}“?`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`Das Gegenteil von „${x[0]}“ ist „${x[1]}“.`};}
+     if(deSubTopic==='opposite'||(deSubTopic==='mixed'&&Math.random()<.5)){const wrong=shuffled(adj.flatMap(a=>[a[0],a[1]]).filter(v=>v!==x[1]&&v!==x[0])).slice(0,2);return {q:`Was ist das Gegenteil von „${x[0]}“?`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`Das Gegenteil von „${x[0]}“ ist „${x[1]}“.`};}
      const wrong=shuffled(adj.map(a=>a[2]).filter(v=>v!==x[2])).slice(0,2);return {q:`Wie lautet die Steigerung von „${x[0]}“?`,opts:shuffled([x[2],...wrong]),ans:x[2],ex:`Die Vergleichsform lautet „${x[2]}“.`};
    }
  }
@@ -815,7 +879,7 @@ function startLangGame(){
  if(!defaultKids.length){alert('Bitte zuerst im Elternbereich ein Kinderprofil anlegen.');show('parent');return;}
  langTotal=0;langCorrect=0;langStart=Date.now();if(langTimer)clearInterval(langTimer);show('langGame');
  const pill=document.getElementById('lgPill'),info=document.getElementById('lgInfo'),bar=document.getElementById('lgBar');
- if(pill) pill.textContent=lang==='de'?'🇩🇪 Deutsch':(langTopic==='vocab'?'🇬🇧 '+(vocabTopic==='mixed'?'Vocabulary':({colors:'Colors',animals:'Animals',clothes:'Wardrobe',school:'School',food:'Food',family:'Family',body:'Body',home:'Home'}[vocabTopic]||'Vocabulary')):'🇬🇧 English');
+ if(pill) pill.textContent=lang==='de'?('🇩🇪 '+({mixed:'Deutsch',nouns:'Nomen',verbs:'Verben',adjectives:'Adjektive'}[langTopic]||'Deutsch')):(langTopic==='vocab'?'🇬🇧 '+(vocabTopic==='mixed'?'Vocabulary':({colors:'Colors',animals:'Animals',clothes:'Wardrobe',school:'School',food:'Food',family:'Family',body:'Body',home:'Home'}[vocabTopic]||'Vocabulary')):'🇬🇧 English');
  if(langMode==='minute'){langTimer=setInterval(()=>{let left=Math.max(0,60-Math.floor((Date.now()-langStart)/1000));if(info)info.textContent=left+' s';if(bar)bar.style.width=((60-left)/60*100)+'%';if(left<=0){clearInterval(langTimer);finishLang()}},250)}
  nextLangTask();
 }
