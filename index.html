@@ -686,11 +686,51 @@ function renderVocabCategories(){
 function pickLangMode(b){document.querySelectorAll('.langmode').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');langMode=b.dataset.lmode}
 function shuffled(a){return [...a].sort(()=>Math.random()-.5)}
 function wordTypeTask(){
- let data=lang==='de'?DE:EN;
- let types=langTopic==='mixed'?['nouns','verbs','adjectives']:[langTopic];
- let type=types[rand(0,types.length-1)], word=data[type][rand(0,data[type].length-1)];
- let labels=lang==='de'?{nouns:'Nomen',verbs:'Verb',adjectives:'Adjektiv'}:{nouns:'Noun',verbs:'Verb',adjectives:'Adjective'};
- return {q:lang==='de'?`Welche Wortart ist „${word}“?`:`What kind of word is “${word}”?`,opts:shuffled(Object.values(labels)),ans:labels[type],ex:lang==='de'?`„${word}“ ist ein ${labels[type]}.`:`“${word}” is a ${labels[type]}.`}
+ const labels=lang==='de'?{nouns:'Nomen',verbs:'Verb',adjectives:'Adjektiv'}:{nouns:'Noun',verbs:'Verb',adjectives:'Adjective'};
+ const mixed=()=>{
+   const types=['nouns','verbs','adjectives'],type=types[rand(0,types.length-1)],data=lang==='de'?DE:EN,word=data[type][rand(0,data[type].length-1)];
+   return {q:lang==='de'?`Welche Wortart ist „${word}“?`:`What kind of word is “${word}”?`,opts:shuffled(Object.values(labels)),ans:labels[type],ex:lang==='de'?`„${word}“ ist ein ${labels[type]}.`:`“${word}” is a ${labels[type]}.`};
+ };
+ if(langTopic==='mixed') return mixed();
+ if(lang==='de'){
+   if(langTopic==='nouns'){
+     const nouns=[['Hund','der','Hunde'],['Schule','die','Schulen'],['Baum','der','Bäume'],['Tisch','der','Tische'],['Katze','die','Katzen'],['Buch','das','Bücher'],['Blume','die','Blumen'],['Haus','das','Häuser'],['Kind','das','Kinder'],['Ball','der','Bälle']];
+     const x=nouns[rand(0,nouns.length-1)];
+     if(Math.random()<.5) return {q:`Welcher Artikel passt zu „${x[0]}“?`,opts:shuffled(['der','die','das']),ans:x[1],ex:`Es heißt „${x[1]} ${x[0]}“.`};
+     const wrong=shuffled(nouns.map(n=>n[2]).filter(v=>v!==x[2])).slice(0,2);
+     return {q:`Wie lautet der Plural von „${x[0]}“?`,opts:shuffled([x[2],...wrong]),ans:x[2],ex:`Der Plural von „${x[0]}“ ist „${x[2]}“.`};
+   }
+   if(langTopic==='verbs'){
+     const verbs=[['laufen','läuft','lief'],['spielen','spielt','spielte'],['lesen','liest','las'],['schreiben','schreibt','schrieb'],['springen','springt','sprang'],['essen','isst','aß'],['trinken','trinkt','trank'],['schlafen','schläft','schlief']];
+     const x=verbs[rand(0,verbs.length-1)];
+     if(Math.random()<.5){const wrong=shuffled(verbs.map(v=>v[1]).filter(v=>v!==x[1])).slice(0,2);return {q:`Setze richtig ein: „Er/Sie ___.” (${x[0]})`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`Im Präsens heißt es: er/sie ${x[1]}.`};}
+     const wrong=shuffled(verbs.map(v=>v[0]).filter(v=>v!==x[0])).slice(0,2);return {q:`Wie lautet die Grundform von „${x[2]}“?`,opts:shuffled([x[0],...wrong]),ans:x[0],ex:`„${x[2]}“ gehört zum Verb „${x[0]}“.`};
+   }
+   if(langTopic==='adjectives'){
+     const adj=[['groß','klein','größer'],['schnell','langsam','schneller'],['laut','leise','lauter'],['warm','kalt','wärmer'],['hell','dunkel','heller'],['stark','schwach','stärker']];
+     const x=adj[rand(0,adj.length-1)];
+     if(Math.random()<.5){const wrong=shuffled(adj.flatMap(a=>[a[0],a[1]]).filter(v=>v!==x[1]&&v!==x[0])).slice(0,2);return {q:`Was ist das Gegenteil von „${x[0]}“?`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`Das Gegenteil von „${x[0]}“ ist „${x[1]}“.`};}
+     const wrong=shuffled(adj.map(a=>a[2]).filter(v=>v!==x[2])).slice(0,2);return {q:`Wie lautet die Steigerung von „${x[0]}“?`,opts:shuffled([x[2],...wrong]),ans:x[2],ex:`Die Vergleichsform lautet „${x[2]}“.`};
+   }
+ }
+ if(lang==='en'){
+   if(langTopic==='nouns'){
+     const nouns=[['dog','dogs'],['school','schools'],['tree','trees'],['friend','friends'],['table','tables'],['cat','cats'],['book','books'],['flower','flowers'],['house','houses'],['child','children']];
+     const x=nouns[rand(0,nouns.length-1)],wrong=shuffled(nouns.map(n=>n[1]).filter(v=>v!==x[1])).slice(0,2);
+     return {q:`What is the plural of “${x[0]}”?`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`The plural of “${x[0]}” is “${x[1]}”.`};
+   }
+   if(langTopic==='verbs'){
+     const verbs=[['run','runs'],['play','plays'],['read','reads'],['write','writes'],['jump','jumps'],['learn','learns'],['sleep','sleeps'],['eat','eats'],['drink','drinks'],['help','helps']];
+     const x=verbs[rand(0,verbs.length-1)],wrong=shuffled(verbs.map(v=>v[1]).filter(v=>v!==x[1])).slice(0,2);
+     return {q:`Choose the correct form: “He/She ___.” (${x[0]})`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`With he/she, use “${x[1]}”.`};
+   }
+   if(langTopic==='adjectives'){
+     const adj=[['big','small'],['fast','slow'],['happy','sad'],['loud','quiet'],['warm','cold'],['bright','dark'],['strong','weak']];
+     const x=adj[rand(0,adj.length-1)],wrong=shuffled(adj.flatMap(a=>a).filter(v=>v!==x[1]&&v!==x[0])).slice(0,2);
+     return {q:`What is the opposite of “${x[0]}”?`,opts:shuffled([x[1],...wrong]),ans:x[1],ex:`The opposite of “${x[0]}” is “${x[1]}”.`};
+   }
+ }
+ return mixed();
 }
 const VOCAB_CATEGORIES={
  colors:[
@@ -1600,7 +1640,7 @@ window.getLernheldenGrade=function(){
 })();
 </script>
 <script>
-/* v10.0 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
+/* v10.1 cloud helpers: attempts and learning time can be written immediately when existing app calls these hooks. */
 window.LernheldenCloud = window.LernheldenCloud || {};
 window.LernheldenCloud.recordAttempt = async function(subject,topic,question,correct,answer,correctAnswer){
  try{
@@ -1913,7 +1953,10 @@ const RS150=(()=>{
  const pick=a=>a[Math.floor(Math.random()*a.length)];
  const sh=a=>[...a].sort(()=>Math.random()-.5);
  const uq=(a,x,n=2)=>sh([...new Set(a.filter(v=>v!==x))]).slice(0,n);
- const mk=(title,q,a,wrong,why)=>({title,q,a,opts:sh([a,...wrong.filter(x=>x!==a)]).slice(0,3),why});
+ const mk=(title,q,a,wrong,why)=>{
+   const distractors=uq(Array.isArray(wrong)?wrong:[],a,2);
+   return {t:title,q,a,o:sh([a,...distractors]),e:why};
+ };
 
  const memory=[
  ['nämlich','nemlich','nähmlich'],['plötzlich','plözlich','plötzlichh'],['vielleicht','vileicht','vielleich'],['ziemlich','zimlich','ziehmlich'],['während','wärend','währendt'],
