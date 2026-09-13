@@ -7,7 +7,7 @@ function installWrittenAddition(){
  if(el('writtenAddition'))return;
  const math=el('math');if(math){const start=[...math.querySelectorAll('button')].find(b=>/Los geht|Start/i.test(b.textContent||''));const wrap=document.createElement('div');wrap.innerHTML='<div class="title">Schriftlich rechnen</div><div class="modes"><button class="mode" type="button" id="writtenAddBtn">➕ Schriftliche Addition</button></div>';if(start)start.parentNode.insertBefore(wrap,start);else math.appendChild(wrap);el('writtenAddBtn').onclick=openWrittenAddition;}
  const section=document.createElement('section');section.id='writtenAddition';section.className='screen';section.innerHTML=`
- <div class="hero"><h1>➕ Schriftliche Addition</h1><p>Trage den Übertrag direkt über der nächsten Stelle ein und berechne anschließend das Ergebnis.</p></div>
+ <div class="hero"><h1>➕ Schriftliche Addition</h1><p>Trage den Übertrag direkt am Rechenstrich ein und berechne anschließend das Ergebnis.</p></div>
  <div class="card">
   <div class="row"><div><div class="label">Aufgabe</div><div id="waTask" style="font-size:1.5rem;font-weight:800"></div></div><div><div class="label">Fortschritt</div><div id="waProgress">1 / 10</div></div></div>
   <div id="waColumn" style="margin:28px auto;max-width:420px"></div>
@@ -36,16 +36,14 @@ function renderWrittenAddition(){
    const nextCarry=Math.floor((da+db+carry)/10);
    waCarries[cols-pos-2]=nextCarry;carry=nextCarry;
  }
- const cells=(text,cls='')=>'<div style="display:grid;grid-template-columns:repeat('+cols+',48px);justify-content:center;gap:4px;'+cls+'">'+[...text].map(ch=>'<div style="text-align:center">'+(ch===' '?'&nbsp;':ch)+'</div>').join('')+'</div>';
- let carryRow='<div style="display:grid;grid-template-columns:repeat('+cols+',48px);justify-content:center;gap:4px;margin-bottom:3px">';
+ const row=(text,plus)=>'<div style="display:grid;grid-template-columns:repeat('+cols+',48px);justify-content:center;gap:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:2rem;line-height:1.25">'+[...text].map((ch,i)=>'<div style="text-align:center;position:relative">'+(plus&&i===0?'<span style="position:absolute;left:-17px">+</span>':'')+(ch===' '?'&nbsp;':ch)+'</div>').join('')+'</div>';
+ let carryRow='<div style="display:grid;grid-template-columns:repeat('+cols+',48px);justify-content:center;gap:4px;position:absolute;left:50%;transform:translateX(-50%);top:50%;width:max-content">';
  for(let i=0;i<cols;i++){
    if(i===cols-1){carryRow+='<div></div>';continue;}
-   carryRow+='<input id="waCarry'+i+'" inputmode="numeric" pattern="[0-9]*" maxlength="1" placeholder="·" aria-label="Übertrag" style="width:34px;height:34px;margin:auto;text-align:center;font-size:1rem;border:1.5px dashed #8a8a9a;border-radius:8px;background:#fff">';
+   carryRow+='<input id="waCarry'+i+'" inputmode="numeric" pattern="[0-9]*" maxlength="1" placeholder="·" aria-label="Übertrag" style="width:32px;height:30px;margin:auto;text-align:center;font-size:1rem;border:1.5px solid #8a8a9a;border-radius:7px;background:#fff;transform:translateY(-50%)">';
  }
  carryRow+='</div>';
- const plusB=b.split('');let bHtml='<div style="display:grid;grid-template-columns:repeat('+cols+',48px);justify-content:center;gap:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:2rem;line-height:1.25">';
- plusB.forEach((ch,i)=>{bHtml+='<div style="text-align:center;position:relative">'+(i===0?'<span style="position:absolute;left:-17px">+</span>':'')+(ch===' '?'&nbsp;':ch)+'</div>';});bHtml+='</div>';
- box.innerHTML='<div style="font-size:.88rem;text-align:center;margin-bottom:8px;color:#666">Übertrag hier eintragen ↓</div>'+carryRow+cells(a,'font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:2rem;line-height:1.25')+bHtml+'<div style="height:3px;background:currentColor;max-width:'+(cols*52)+'px;margin:5px auto 9px"></div><div style="text-align:center"><input id="waAnswer" inputmode="numeric" pattern="[0-9]*" class="answerInput" placeholder="Ergebnis" style="max-width:'+(cols*52)+'px;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.8rem"></div>';
+ box.innerHTML=row(a,false)+row(b,true)+'<div style="position:relative;height:22px;margin:4px auto 10px;max-width:'+(cols*52)+'px"><div style="position:absolute;left:0;right:0;top:50%;height:3px;background:currentColor"></div>'+carryRow+'</div><div style="font-size:.82rem;text-align:center;margin:-2px 0 8px;color:#666">Übertrag direkt am Strich eintragen</div><div style="text-align:center"><input id="waAnswer" inputmode="numeric" pattern="[0-9]*" class="answerInput" placeholder="Ergebnis" style="max-width:'+(cols*52)+'px;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.8rem"></div>';
  const ans=el('waAnswer');if(ans)ans.focus();
 }
 function checkWrittenAddition(){
@@ -53,7 +51,7 @@ function checkWrittenAddition(){
  let carryOK=true,firstWrong=-1;for(let i=0;i<waCarries.length-1;i++){const inp=el('waCarry'+i),raw=inp?inp.value.trim():'',userCarry=raw===''?0:Number(raw),expected=waCarries[i];const ok=userCarry===expected;if(!ok&&firstWrong<0)firstWrong=i;if(!ok)carryOK=false;if(inp)inp.style.outline=ok?'2px solid #2e7d32':'2px solid #d32f2f';}
  const correct=waA+waB,user=Number(ans.value),answerOK=user===correct;
  if(carryOK&&answerOK){waDone=true;waCorrect++;ans.disabled=true;if(fb){fb.textContent='✅ Richtig! Übertrag und Ergebnis stimmen.';fb.className='feedback ok';}try{if(typeof window.sayBravo==='function')window.sayBravo();}catch(e){}if(el('waCheck'))el('waCheck').style.display='none';if(el('waNext'))el('waNext').style.display='block';try{if(typeof window.recordAttempt==='function')window.recordAttempt('math','Schriftliche Addition',true);}catch(e){}}
- else if(fb){fb.textContent=!carryOK?'❌ Prüfe den roten Übertrag.':'❌ Der Übertrag stimmt. Prüfe noch einmal dein Ergebnis.';fb.className='feedback bad';}
+ else if(fb){fb.textContent=!carryOK?'❌ Prüfe den roten Übertrag am Strich.':'❌ Der Übertrag stimmt. Prüfe noch einmal dein Ergebnis.';fb.className='feedback bad';}
 }
 function finishWrittenAddition(){if(el('waTask'))el('waTask').textContent='Geschafft! 🎉';if(el('waColumn'))el('waColumn').innerHTML='';if(el('waCheck'))el('waCheck').style.display='none';if(el('waNext'))el('waNext').style.display='none';const fb=el('waFeedback');if(fb){fb.textContent='Du hast '+waCorrect+' von '+waTotal+' Aufgaben richtig gelöst.';fb.className='feedback ok';}}
 window.openWrittenAddition=openWrittenAddition;window.nextWrittenAddition=nextWrittenAddition;window.checkWrittenAddition=checkWrittenAddition;if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installWrittenAddition);else installWrittenAddition();
