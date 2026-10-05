@@ -1,0 +1,38 @@
+name: Patch Lernhelden index v11.8
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-index.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index and version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("const LH_APP_VERSION='11.0.0', LH_APP_BUILD='2026-09-06';", "const LH_APP_VERSION='11.8.0', LH_APP_BUILD='2026-10-05';")
+          s=s.replace("const VERSION='6.0.0';", "const VERSION='11.8.0';")
+          marker='''<script src="./written-addition.js?v=11.8.0"></script>\n<script src="./german-spelling-extra.js?v=11.8.0"></script>\n<script src="./cube-solver.js?v=11.8.0"></script>'''
+          if 'cube-solver.js?v=11.8.0' not in s:
+              s=s.replace('</body>', marker+'\n</body>')
+          p.write_text(s,encoding='utf-8')
+          Path('version.json').write_text('''{\n  "version": "11.8.0",\n  "name": "Lernhelden v11.8 – Zauberwürfel und Lernmodule",\n  "build": "2026-10-05"\n}\n''',encoding='utf-8')
+          sw=Path('sw.js')
+          x=sw.read_text(encoding='utf-8')
+          x=x.replace("lernhelden-v11-7-0","lernhelden-v11-8-0").replace("11.7.0","11.8.0")
+          sw.write_text(x,encoding='utf-8')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "Lernhelden Update Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html version.json sw.js
+          git diff --cached --quiet || git commit -m "Fix direct module loading and version v11.8"
+          git push
