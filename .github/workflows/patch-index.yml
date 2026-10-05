@@ -36,3 +36,4 @@ jobs:
           git add index.html version.json sw.js
           git diff --cached --quiet || git commit -m "Fix direct module loading and version v11.8"
           git push
+# trigger 2
