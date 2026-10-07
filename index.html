@@ -728,7 +728,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='11.8.0', LH_APP_BUILD='2026-10-05';
+const LH_APP_VERSION='11.8.1', LH_APP_BUILD='2026-10-05';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -1257,7 +1257,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
 
 <script>
 (function(){
-  const VERSION='11.8.0';
+  const VERSION='11.8.1';
   window.LERNHELDEN_VERSION=VERSION;
 
   async function registerAndWatch(){
@@ -2538,7 +2538,7 @@ return{open,pick,next(){
 
 </script>
 
-<script src="./written-addition.js?v=11.8.0"></script>
-<script src="./german-spelling-extra.js?v=11.8.0"></script>
-<script src="./cube-solver.js?v=11.8.0"></script>
+<script src="./written-addition.js?v=11.8.1"></script>
+<script src="./german-spelling-extra.js?v=11.8.1"></script>
+<script src="./cube-solver.js?v=11.8.1"></script>
 </body></html>
