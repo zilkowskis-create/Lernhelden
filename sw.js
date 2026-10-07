@@ -1,4 +1,4 @@
-const CACHE='lernhelden-v11-8-0';
+const CACHE='lernhelden-v11-8-1';
 const CORE=['./','./index.html','./manifest.webmanifest','./config.js','./written-addition.js','./german-spelling-extra.js','./cube-solver.js','./version.json','./icon-180.png','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',event=>{
@@ -20,14 +20,14 @@ self.addEventListener('message',event=>{
 
 function injectModules(html){
   const scripts=[
-    ['written-addition.js','11.8.0'],
-    ['german-spelling-extra.js','11.8.0'],
-    ['cube-solver.js','11.8.0']
+    ['written-addition.js','11.8.1'],
+    ['german-spelling-extra.js','11.8.1'],
+    ['cube-solver.js','11.8.1']
   ];
   for(const [file,version] of scripts){
     if(!html.includes(file)) html=html.replace('</body>',`<script src="./${file}?v=${version}"></script></body>`);
   }
-  html=html.replace("const VERSION='6.0.0'","const VERSION='11.8.0'");
+  html=html.replace("const VERSION='6.0.0'","const VERSION='11.8.1'");
   return html;
 }
 
