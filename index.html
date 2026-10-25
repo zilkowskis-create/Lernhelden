@@ -585,6 +585,34 @@ function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function factWeight(id){let d=data(),f=d.facts[id];return f?Math.max(1,1+(f.wrong||0)*3-(f.correct||0)*.35):3}
 function weighted(items){let pool=[];items.forEach(x=>{let w=Math.ceil(factWeight(x.id));for(let i=0;i<w;i++)pool.push(x)});return pool[rand(0,pool.length-1)]}
 
+// Complete each selected fact pool before repeating any of its tasks.
+function createFactRotation({random=Math.random,weight=()=>1,storageKey=''}={}){
+ const rounds=new Map();
+ if(storageKey)try{const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');if(Array.isArray(saved))for(const [key,state] of saved.slice(-12))if(typeof key==='string'&&Array.isArray(state.remaining)&&state.remaining.every(id=>typeof id==='string'))rounds.set(key,state)}catch(error){}
+ function save(){if(storageKey)try{localStorage.setItem(storageKey,JSON.stringify([...rounds].slice(-12)))}catch(error){}}
+ return {next(items,group='default'){
+  const unique=[...new Map(items.map(item=>[item.id,item])).values()];
+  if(!unique.length)throw new Error('Keine Einmaleins-Aufgaben ausgewählt.');
+  const key=JSON.stringify([group,unique.map(item=>item.id).sort()]);
+  let state=rounds.get(key);
+  if(!state){state={remaining:[],last:null};rounds.set(key,state)}
+  const byId=new Map(unique.map(item=>[item.id,item]));
+  state.remaining=[...new Set(state.remaining)].filter(id=>byId.has(id));
+  if(!state.remaining.length)state.remaining=unique.map(item=>item.id);
+  let candidates=state.remaining.filter(id=>id!==state.last);
+  if(!candidates.length)candidates=state.remaining;
+  const weights=candidates.map(id=>{const w=Number(weight(byId.get(id)));return Number.isFinite(w)&&w>0?w:1});
+  let target=random()*weights.reduce((sum,w)=>sum+w,0),index=0;
+  while(index<weights.length-1&&target>=weights[index])target-=weights[index++];
+  const id=candidates[index];state.remaining=state.remaining.filter(x=>x!==id);state.last=id;
+  // Keep a small number of pools; changing children or row selections stays independent.
+  rounds.delete(key);rounds.set(key,state);while(rounds.size>12)rounds.delete(rounds.keys().next().value);
+  save();return byId.get(id);
+ }};
+}
+const tableFactRotation=createFactRotation({weight:item=>factWeight(item.id),storageKey:'lernhelden_table_rotation_v1'});
+function nextTableFact(items,scope='arena'){return tableFactRotation.next(items,scope+'|'+(currentKid||'default'))}
+
 function makeTextTask(){
  const names=['Mia','Ben','Lina','Noah','Emma','Paul','Sofia','Leon'];
  const things=[
@@ -634,7 +662,7 @@ function makeTask(){
  if(op==='*'||op==='/'){
    let ts=selectedTables.length?selectedTables:[1];
    ts.forEach(t=>{for(let n=1;n<=10;n++){if(op==='*')items.push({a:t,b:n,ans:t*n,text:`${t} × ${n} = ?`,id:`mul_${t}_${n}`,table:t});else items.push({a:t*n,b:t,ans:n,text:`${t*n} ÷ ${t} = ?`,id:`div_${t}_${n}`,table:t})}})
-   return weighted(items)
+   return nextTableFact(items)
  }
  if(op==='+'){
    let a=rand(0,range),b=rand(0,range-a);return {a,b,ans:a+b,text:`${a} + ${b} = ?`,id:`plus_${range}_${a}_${b}`}
@@ -728,7 +756,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='11.8.4', LH_APP_BUILD='2026-10-05';
+const LH_APP_VERSION='11.8.5', LH_APP_BUILD='2026-10-25';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -1257,7 +1285,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
 
 <script>
 (function(){
-  const VERSION='11.8.4';
+  const VERSION='11.8.5';
   window.LERNHELDEN_VERSION=VERSION;
 
   async function registerAndWatch(){
@@ -2219,8 +2247,12 @@ function pick(k){
 }
 function inp(t,q,a,e){return{t,q,a:String(a),e}} function mc(t,q,a,o,e){return{t,q,a:String(a),o:S(o.map(String)),e}}
 function basicMath(){
- if(topic==='times'){let a=R(2,10),b=R(2,10);return inp('Multiplikation',`${a} · ${b} = ?`,a*b,'Nutze das Einmaleins.')}
- if(topic==='divide'){let d=R(2,10),q=R(2,10);return inp('Division',`${d*q} : ${d} = ?`,q,'Nutze die Umkehraufgabe der Multiplikation.')}
+ if(topic==='times'||topic==='divide'){
+  const items=[];
+  for(let a=1;a<=10;a++)for(let b=1;b<=10;b++)items.push({a,b,id:`${topic==='times'?'mul':'div'}_${a}_${b}`});
+  const {a,b}=nextTableFact(items,'v82-'+topic);
+  return topic==='times'?inp('Multiplikation',`${a} · ${b} = ?`,a*b,'Nutze das Einmaleins.'):inp('Division',`${a*b} : ${a} = ?`,b,'Nutze die Umkehraufgabe der Multiplikation.');
+ }
  if(topic==='plus'){let a=R(1,500),b=R(1,400);return inp('Addition',`${a} + ${b} = ?`,a+b,'Addiere stellenweise.')}
  if(topic==='minus'){let b=R(1,400),a=R(b,999);return inp('Subtraktion',`${a} − ${b} = ?`,a-b,'Subtrahiere stellenweise.')}
  let a=R(50,300),b=R(20,200);return inp('Textaufgabe',`Lena hat ${a} Sticker und bekommt ${b} dazu. Wie viele hat sie?`,a+b,'„Dazu“ bedeutet addieren.')
@@ -2538,7 +2570,8 @@ return{open,pick,next(){
 
 </script>
 
-<script src="./written-addition.js?v=11.8.4"></script>
-<script src="./german-spelling-extra.js?v=11.8.4"></script>
-<script src="./cube-solver.js?v=11.8.4"></script>
+<script src="./written-addition.js?v=11.8.5"></script>
+<script src="./german-spelling-extra.js?v=11.8.5"></script>
+<script src="./cube-solver.js?v=11.8.5"></script>
 </body></html>
+
