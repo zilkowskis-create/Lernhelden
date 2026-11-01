@@ -1215,16 +1215,19 @@ renderKids();renderTables();refresh();updateVersionDisplay();
     try{
       if('speechSynthesis' in window){
         window.speechSynthesis.cancel();
-        const msg=new SpeechSynthesisUtterance('Bravo!');
+        window.__successVoiceCount=(window.__successVoiceCount||0)+1;
+        const useMale=window.__successVoiceCount%2===0;
+        const msg=new SpeechSynthesisUtterance(useMale?'Super!':'Bravo!');
         msg.lang='de-DE';
         msg.rate=1.08;
-        msg.pitch=1.62;
+        msg.pitch=useMale?0.85:1.62;
         msg.volume=0.48;
 
         const voices=window.speechSynthesis.getVoices();
         const germanVoices=voices.filter(v=>String(v.lang||'').toLowerCase().startsWith('de'));
-        const preferred=germanVoices.find(v=>/anna|katja|helena|vicki|female|siri/i.test(v.name))
-          || germanVoices[0];
+        const preferred=useMale
+          ? (germanVoices.find(v=>/markus|stefan|thomas|daniel|male|männlich/i.test(v.name)) || germanVoices.find(v=>!/anna|katja|helena|vicki|female/i.test(v.name)) || germanVoices[0])
+          : (germanVoices.find(v=>/anna|katja|helena|vicki|female|siri/i.test(v.name)) || germanVoices[0]);
         if(preferred) msg.voice=preferred;
 
         window.speechSynthesis.speak(msg);
