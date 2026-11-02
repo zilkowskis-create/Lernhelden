@@ -690,6 +690,7 @@ function playApplause(){
 }
 
 function checkAnswer(){if(answered)return;let val=Number(answer.value);if(answer.value.trim()==='')return;answered=true;gameTotal++;let ok=val===current.ans;if(ok)gameCorrect++;let d=data();progressInto(d,'math',op,current.q||question.textContent,ok,answer.value,current.ans);let f=d.facts[current.id]||{correct:0,wrong:0};ok?f.correct++:f.wrong++;d.facts[current.id]=f;if(current.table){let t=d.tables[current.table]||{correct:0,total:0};t.total++;if(ok)t.correct++;d.tables[current.table]=t}save(d);answer.disabled=true;checkBtn.style.display='none';feedback.className='feedback '+(ok?'ok':'bad');
+ if(!ok && window.playWrongSound) window.playWrongSound();
  if(ok){
    feedback.textContent='👏 Super! Richtig! +3 Sterne – nächste Aufgabe in 2 Sekunden';
    nextBtn.style.display='none';
@@ -756,7 +757,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='11.8.9', LH_APP_BUILD='2026-11-01';
+const LH_APP_VERSION='11.8.10', LH_APP_BUILD='2026-11-01';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -1101,7 +1102,7 @@ function nextLangTask(){
  (t.opts||[]).forEach(o=>{let b=document.createElement('button');b.className='answer';b.textContent=o;b.onclick=()=>checkLang(b,o);answers.appendChild(b)});
  if(langMode==='ten'){if(info)info.textContent=(langTotal+1)+' / 10';if(bar)bar.style.width=(langTotal/10*100)+'%'}else if(langMode==='practice'){if(info)info.textContent=langCorrect+' richtig'}
 }
-function checkLang(btn,val){const answers=document.getElementById('lgAnswers'),feedback=document.getElementById('lgFeedback'),next=document.getElementById('lgNext'),question=document.getElementById('lgQuestion');if(langLocked||!answers||!feedback)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...answers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');feedback.className='feedback '+(ok?'ok':'bad');
+function checkLang(btn,val){const answers=document.getElementById('lgAnswers'),feedback=document.getElementById('lgFeedback'),next=document.getElementById('lgNext'),question=document.getElementById('lgQuestion');if(langLocked||!answers||!feedback)return;langLocked=true;langTotal++;let ok=val===window._lt.ans;if(ok)langCorrect++;[...answers.children].forEach(b=>{if(b.textContent===window._lt.ans)b.classList.add('correct')});if(!ok)btn.classList.add('wrong');feedback.className='feedback '+(ok?'ok':'bad'); if(!ok && window.playWrongSound) window.playWrongSound();
  if(ok){feedback.textContent='👏 Super! '+window._lt.ex+' – nächste Aufgabe in 2 Sekunden';celebrateCorrect();}
  else{feedback.textContent='Noch nicht ganz. '+window._lt.ex;}
  let d=data();progressInto(d,lang==='de'?'de':'en',(lang==='en'&&langTopic==='vocab')?('Vokabeln · '+(window._lt.category||vocabTopic)):langTopic,window._lt.q||(question?question.textContent:''),ok,val,window._lt.ans);save(d);refresh();
@@ -1263,6 +1264,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
       const AudioContextClass=window.AudioContext||window.webkitAudioContext;
       if(!AudioContextClass) return;
       const ctx=new AudioContextClass();
+      if(ctx.state==='suspended') ctx.resume().catch(()=>{});
       const notes=[392,330,262];
       notes.forEach((freq,i)=>{
         const osc=ctx.createOscillator(),gain=ctx.createGain();
@@ -1276,10 +1278,6 @@ renderKids();renderTables();refresh();updateVersionDisplay();
       setTimeout(()=>ctx.close().catch(()=>{}),1000);
     }catch(e){}
   };
-  document.addEventListener('click',function(ev){
-    const el=ev.target.closest&&ev.target.closest('.answer.wrong');
-    if(el) window.playWrongSound();
-  },true);
 
   window.celebrateCorrect=function(){
     window.playSuccessSound();
@@ -1310,7 +1308,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
 
 <script>
 (function(){
-  const VERSION='11.8.9';
+  const VERSION='11.8.10';
   window.LERNHELDEN_VERSION=VERSION;
 
   async function registerAndWatch(){
@@ -2216,6 +2214,7 @@ window.K4=(function(){
     if(k4AutoNext)clearTimeout(k4AutoNext);
     k4AutoNext=setTimeout(()=>{k4AutoNext=null;K4.next()},2000);
   }else{
+    if(window.playWrongSound) window.playWrongSound();
     F.innerHTML=`💡 <b>Noch nicht.</b> Richtige Antwort: <b>${cur.a}</b><br>${cur.ex}`;
     N.style.display='inline-block';
   }
@@ -2577,6 +2576,7 @@ function check(v){
    if(typeof celebrateCorrect==='function')try{celebrateCorrect()}catch(e){}
    autoTimer=setTimeout(()=>{autoTimer=null;V82.next()},2000);
  }else{
+   if(window.playWrongSound) window.playWrongSound();
    F.innerHTML=`💡 <b>Noch nicht.</b> Richtig: <b>${cur.a}</b><br>${cur.e}`;
    N.style.display='inline-block';
  }
@@ -2595,8 +2595,8 @@ return{open,pick,next(){
 
 </script>
 
-<script src="./written-addition.js?v=11.8.9"></script>
-<script src="./german-spelling-extra.js?v=11.8.9"></script>
-<script src="./cube-solver.js?v=11.8.9"></script>
+<script src="./written-addition.js?v=11.8.10"></script>
+<script src="./german-spelling-extra.js?v=11.8.10"></script>
+<script src="./cube-solver.js?v=11.8.10"></script>
 </body></html>
 
