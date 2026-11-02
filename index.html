@@ -756,7 +756,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='11.8.6', LH_APP_BUILD='2026-11-01';
+const LH_APP_VERSION='11.8.7', LH_APP_BUILD='2026-11-01';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -1259,6 +1259,30 @@ renderKids();renderTables();refresh();updateVersionDisplay();
     }
   };
 
+  window.playWrongSound=function(){
+    if(!getBool(SOUND_KEY,true)) return;
+    try{
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if(!AudioContextClass) return;
+      const ctx=new AudioContextClass();
+      const notes=[392,330,262];
+      notes.forEach((freq,i)=>{
+        const osc=ctx.createOscillator(),gain=ctx.createGain();
+        const t=ctx.currentTime+i*0.14;
+        osc.type='sine';osc.frequency.setValueAtTime(freq,t);
+        gain.gain.setValueAtTime(0.0001,t);
+        gain.gain.exponentialRampToValueAtTime(0.10,t+0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001,t+0.19);
+        osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+0.20);
+      });
+      setTimeout(()=>ctx.close().catch(()=>{}),1000);
+    }catch(e){}
+  };
+  document.addEventListener('click',function(ev){
+    const el=ev.target.closest&&ev.target.closest('.answer.wrong');
+    if(el) window.playWrongSound();
+  },true);
+
   window.celebrateCorrect=function(){
     window.playSuccessSound();
     window.launchCelebration();
@@ -1288,7 +1312,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
 
 <script>
 (function(){
-  const VERSION='11.8.6';
+  const VERSION='11.8.7';
   window.LERNHELDEN_VERSION=VERSION;
 
   async function registerAndWatch(){
@@ -2573,8 +2597,8 @@ return{open,pick,next(){
 
 </script>
 
-<script src="./written-addition.js?v=11.8.6"></script>
-<script src="./german-spelling-extra.js?v=11.8.6"></script>
-<script src="./cube-solver.js?v=11.8.6"></script>
+<script src="./written-addition.js?v=11.8.7"></script>
+<script src="./german-spelling-extra.js?v=11.8.7"></script>
+<script src="./cube-solver.js?v=11.8.7"></script>
 </body></html>
 
