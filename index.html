@@ -757,7 +757,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='11.8.10', LH_APP_BUILD='2026-11-01';
+const LH_APP_VERSION='11.8.11', LH_APP_BUILD='2026-11-01';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -1220,7 +1220,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
         const useNice=window.__successVoiceCount%2===0;
         const msg=new SpeechSynthesisUtterance(useNice?'Supi supi!':'Bravo!');
         msg.lang='de-DE';
-        msg.rate=1.08;
+        msg.rate=useNice?0.76:1.08;
         msg.pitch=useNice?1.75:1.62;
         msg.volume=0.48;
 
@@ -1308,7 +1308,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
 
 <script>
 (function(){
-  const VERSION='11.8.10';
+  const VERSION='11.8.11';
   window.LERNHELDEN_VERSION=VERSION;
 
   async function registerAndWatch(){
@@ -2595,8 +2595,8 @@ return{open,pick,next(){
 
 </script>
 
-<script src="./written-addition.js?v=11.8.10"></script>
-<script src="./german-spelling-extra.js?v=11.8.10"></script>
-<script src="./cube-solver.js?v=11.8.10"></script>
+<script src="./written-addition.js?v=11.8.11"></script>
+<script src="./german-spelling-extra.js?v=11.8.11"></script>
+<script src="./cube-solver.js?v=11.8.11"></script>
 </body></html>
 
