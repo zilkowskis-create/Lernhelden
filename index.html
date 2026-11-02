@@ -756,7 +756,7 @@ function refresh(){
 }
 function resetCurrent(){if(confirm('Lernstand von '+kid().name+' wirklich löschen?')){localStorage.removeItem(key());refresh()}}
 
-const LH_APP_VERSION='11.8.7', LH_APP_BUILD='2026-11-01';
+const LH_APP_VERSION='11.8.8', LH_APP_BUILD='2026-11-01';
 let lang='de', langTopic='mixed', langMode='practice', langTotal=0, langCorrect=0, langTimer=null, langAutoNext=null, langStart=0, langLocked=false, vocabTopic='mixed', deSubTopic='mixed';
 
 const DE = {
@@ -1216,18 +1216,16 @@ renderKids();renderTables();refresh();updateVersionDisplay();
       if('speechSynthesis' in window){
         window.speechSynthesis.cancel();
         window.__successVoiceCount=(window.__successVoiceCount||0)+1;
-        const useMale=window.__successVoiceCount%2===0;
-        const msg=new SpeechSynthesisUtterance(useMale?'Super!':'Bravo!');
+        const useNice=window.__successVoiceCount%2===0;
+        const msg=new SpeechSynthesisUtterance(useNice?'Nice!':'Bravo!');
         msg.lang='de-DE';
         msg.rate=1.08;
-        msg.pitch=useMale?0.85:1.62;
+        msg.pitch=useNice?1.75:1.62;
         msg.volume=0.48;
 
         const voices=window.speechSynthesis.getVoices();
         const germanVoices=voices.filter(v=>String(v.lang||'').toLowerCase().startsWith('de'));
-        const preferred=useMale
-          ? (germanVoices.find(v=>/markus|stefan|thomas|daniel|male|männlich/i.test(v.name)) || germanVoices.find(v=>!/anna|katja|helena|vicki|female/i.test(v.name)) || germanVoices[0])
-          : (germanVoices.find(v=>/anna|katja|helena|vicki|female|siri/i.test(v.name)) || germanVoices[0]);
+        const preferred=germanVoices.find(v=>/anna|katja|helena|vicki|female|siri/i.test(v.name)) || germanVoices[0];
         if(preferred) msg.voice=preferred;
 
         window.speechSynthesis.speak(msg);
@@ -1312,7 +1310,7 @@ renderKids();renderTables();refresh();updateVersionDisplay();
 
 <script>
 (function(){
-  const VERSION='11.8.7';
+  const VERSION='11.8.8';
   window.LERNHELDEN_VERSION=VERSION;
 
   async function registerAndWatch(){
@@ -2597,8 +2595,8 @@ return{open,pick,next(){
 
 </script>
 
-<script src="./written-addition.js?v=11.8.7"></script>
-<script src="./german-spelling-extra.js?v=11.8.7"></script>
-<script src="./cube-solver.js?v=11.8.7"></script>
+<script src="./written-addition.js?v=11.8.8"></script>
+<script src="./german-spelling-extra.js?v=11.8.8"></script>
+<script src="./cube-solver.js?v=11.8.8"></script>
 </body></html>
 
